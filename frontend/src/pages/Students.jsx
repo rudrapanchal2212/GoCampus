@@ -1,0 +1,110 @@
+import React, { useEffect, useState, useContext } from 'react';
+import axios from 'axios';
+import AuthContext from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import '../styles.css';
+
+const Students = () => {
+    const { user } = useContext(AuthContext);
+    const [students, setStudents] = useState([]);
+
+    // Fetch registered students (from User collection)
+    useEffect(() => {
+        fetchStudents();
+    }, []);
+
+    const fetchStudents = async () => {
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
+            const { data } = await axios.get('http://localhost:5000/api/users/students', config);
+            setStudents(data);
+        } catch (error) {
+            console.error("Error fetching students:", error);
+            toast.error("Failed to fetch students");
+        }
+    };
+
+    return (
+        <div className="container">
+            <h2>Registered Students</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+                All students who have registered on the platform
+            </p>
+
+            <div className="card p-4">
+                <h3>Student List ({students.length})</h3>
+                {students.length === 0 ? (
+                    <p style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                        No students registered yet.
+                    </p>
+                ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}>
+                                <th style={{ padding: '10px' }}>Name</th>
+                                <th style={{ padding: '10px' }}>Email</th>
+                                <th style={{ padding: '10px' }}>Department</th>
+                                <th style={{ padding: '10px' }}>Enrollment No</th>
+                                <th style={{ padding: '10px' }}>Phone</th>
+                                <th style={{ padding: '10px' }}>Profile Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {students.map((student) => (
+                                <tr key={student._id} style={{ borderBottom: '1px solid #eee' }}>
+                                    <td style={{ padding: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            {student.profilePhoto && (
+                                                <img
+                                                    src={student.profilePhoto}
+                                                    alt={student.name}
+                                                    style={{
+                                                        width: '40px',
+                                                        height: '40px',
+                                                        borderRadius: '50%',
+                                                        objectFit: 'cover'
+                                                    }}
+                                                />
+                                            )}
+                                            <span>{student.fullName || student.name}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '10px' }}>{student.email}</td>
+                                    <td style={{ padding: '10px' }}>{student.department || 'N/A'}</td>
+                                    <td style={{ padding: '10px' }}>{student.enrollmentNo || 'Not provided'}</td>
+                                    <td style={{ padding: '10px' }}>{student.phoneNumber || 'Not provided'}</td>
+                                    <td style={{ padding: '10px' }}>
+                                        <span style={{
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.85rem',
+                                            backgroundColor: student.profileCompleted ? '#d4edda' : '#fff3cd',
+                                            color: student.profileCompleted ? '#155724' : '#856404',
+                                            border: `1px solid ${student.profileCompleted ? '#c3e6cb' : '#ffeaa7'}`
+                                        }}>
+                                            {student.profileCompleted ? '✓ Complete' : '⚠ Incomplete'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+
+            <div className="card p-4 mt-4" style={{ backgroundColor: '#f8f9fa' }}>
+                <h4>ℹ️ Note</h4>
+                <p style={{ margin: 0, color: '#666' }}>
+                    Students are automatically added when they sign up on the platform.
+                    They must complete their profile with enrollment number, phone, Aadhaar, and photo.
+                </p>
+            </div>
+        </div>
+    );
+};
+
+export default Students;
