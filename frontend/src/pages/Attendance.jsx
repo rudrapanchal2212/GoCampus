@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import Select from 'react-select';
 import '../styles.css';
 
 const Attendance = () => {
@@ -10,7 +11,6 @@ const Attendance = () => {
     const [students, setStudents] = useState([]);
     const [attendance, setAttendance] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState('');
-    const [selectedStudent, setSelectedStudent] = useState('');
     const [status, setStatus] = useState('Present');
     const [session, setSession] = useState('General');
     const [selectedStudents, setSelectedStudents] = useState([]);
@@ -30,7 +30,7 @@ const Attendance = () => {
 
     const fetchEvents = async () => {
         try {
-            const { data } = await axios.get('http://localhost:5000/api/events');
+            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/events`);
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -47,7 +47,7 @@ const Attendance = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get('http://localhost:5000/api/users/students', config);
+            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/users/students`, config);
             setStudents(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -63,7 +63,7 @@ const Attendance = () => {
                 },
             };
             const { data } = await axios.get(
-                `http://localhost:5000/api/attendance?event=${eventId}`,
+                `http://${window.location.hostname}:5000/api/attendance?event=${eventId}`,
                 config
             );
             setAttendance(Array.isArray(data) ? data : []);
@@ -82,7 +82,7 @@ const Attendance = () => {
                 },
             };
             const { data } = await axios.get(
-                `http://localhost:5000/api/attendance/event/${eventId}/stats`,
+                `http://${window.location.hostname}:5000/api/attendance/event/${eventId}/stats`,
                 config
             );
             setStats(data);
@@ -93,13 +93,13 @@ const Attendance = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedEvent || !selectedStudent) {
-            toast.error("Please select both event and student");
+        if (!selectedEvent || selectedStudents.length === 0) {
+            toast.error("Please select an event and at least one student");
             return;
         }
 
         // Add loading state
-        const loadingToast = toast.loading("Marking attendance...");
+        const loadingToast = toast.loading(`Marking attendance for ${selectedStudents.length} students...`);
 
         try {
             const config = {
@@ -108,10 +108,10 @@ const Attendance = () => {
                 },
             };
             await axios.post(
-                'http://localhost:5000/api/attendance',
+                `http://${window.location.hostname}:5000/api/attendance/bulk`,
                 {
                     event: selectedEvent,
-                    student: selectedStudent,
+                    students: selectedStudents,
                     status,
                     session
                 },
@@ -120,7 +120,7 @@ const Attendance = () => {
 
             // Dismiss loading toast
             toast.dismiss(loadingToast);
-            toast.success("✓ Attendance Marked Successfully!");
+            toast.success(`✓ Marked attendance for ${selectedStudents.length} students!`);
 
             // Auto-refresh data with smooth transition
             await Promise.all([
@@ -128,8 +128,8 @@ const Attendance = () => {
                 fetchEventStats(selectedEvent)
             ]);
 
-            // Reset form
-            setSelectedStudent('');
+            // Reset selection
+            setSelectedStudents([]);
 
             // Optional: Add a subtle success animation effect
             const statsCards = document.querySelectorAll('.stat-card');
@@ -168,7 +168,7 @@ const Attendance = () => {
                 },
             };
             await axios.post(
-                'http://localhost:5000/api/attendance/bulk',
+                `http://${window.location.hostname}:5000/api/attendance/bulk`,
                 {
                     event: selectedEvent,
                     students: selectedStudents,
@@ -221,7 +221,7 @@ const Attendance = () => {
                 responseType: 'blob'
             };
             const response = await axios.get(
-                `http://localhost:5000/api/attendance/export/csv?event=${selectedEvent}`,
+                `http://${window.location.hostname}:5000/api/attendance/export/csv?event=${selectedEvent}`,
                 config
             );
 
@@ -256,6 +256,75 @@ const Attendance = () => {
             case 'Absent': return '#ef4444';
             default: return '#6b7280';
         }
+    };
+
+    const eventOptions = Array.isArray(events) ? events.map(event => ({
+        value: event._id,
+        label: event.title
+    })) : [];
+
+    const studentOptions = Array.isArray(students) ? students.map(student => ({
+        value: student._id,
+        label: `${student.enrollmentNo ? `${student.enrollmentNo} - ` : ''}${student.name} (${student.email})`
+    })) : [];
+
+    const sessionOptions = [
+        { value: 'General', label: 'General' },
+        { value: 'Morning', label: 'Morning' },
+        { value: 'Afternoon', label: 'Afternoon' },
+        { value: 'Day 1', label: 'Day 1' },
+        { value: 'Day 2', label: 'Day 2' }
+    ];
+
+    const statusOptions = [
+        { value: 'Present', label: 'Present' },
+        { value: 'Late', label: 'Late' },
+        { value: 'Absent', label: 'Absent' }
+    ];
+
+    const selectStyles = {
+        control: (base, state) => ({
+            ...base,
+            backgroundColor: 'var(--bg-color)',
+            borderColor: state.isFocused ? 'var(--primary-color)' : 'var(--border-color)',
+            color: 'var(--text-primary)',
+            minHeight: '44px',
+            boxShadow: state.isFocused ? '0 0 0 3px rgba(99, 102, 241, 0.15)' : 'none',
+            '&:hover': {
+                borderColor: state.isFocused ? 'var(--primary-color)' : 'var(--border-color)'
+            }
+        }),
+        menu: (base) => ({
+            ...base,
+            backgroundColor: 'var(--card-bg)',
+            border: '1px solid var(--border-color)',
+            zIndex: 100
+        }),
+        option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isSelected 
+                ? 'var(--primary-color)' 
+                : state.isFocused 
+                    ? 'rgba(99, 102, 241, 0.1)' 
+                    : 'transparent',
+            color: state.isSelected ? '#fff' : 'var(--text-primary)',
+            cursor: 'pointer',
+            '&:active': {
+                backgroundColor: 'var(--primary-hover)'
+            }
+        }),
+        singleValue: (base) => ({
+            ...base,
+            color: 'var(--text-primary)',
+        }),
+        input: (base) => ({
+            ...base,
+            color: 'var(--text-primary)',
+        }),
+        placeholder: (base) => ({
+            ...base,
+            color: 'var(--text-secondary)',
+        })
     };
 
     return (
@@ -297,62 +366,67 @@ const Attendance = () => {
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Select Event</label>
-                        <select
-                            className="form-control"
-                            value={selectedEvent}
-                            onChange={(e) => setSelectedEvent(e.target.value)}
-                            required
-                        >
-                            <option value="">-- Select Event --</option>
-                            {Array.isArray(events) && events.map(event => (
-                                <option key={event._id} value={event._id}>{event.title}</option>
-                            ))}
-                        </select>
+                        <Select
+                            options={eventOptions}
+                            value={eventOptions.find(opt => opt.value === selectedEvent) || null}
+                            onChange={(option) => setSelectedEvent(option ? option.value : '')}
+                            placeholder="-- Select Event --"
+                            isSearchable
+                            styles={selectStyles}
+                        />
                     </div>
 
                     <div className="form-group">
                         <label>Session</label>
-                        <select
-                            className="form-control"
-                            value={session}
-                            onChange={(e) => setSession(e.target.value)}
-                        >
-                            <option value="General">General</option>
-                            <option value="Morning">Morning</option>
-                            <option value="Afternoon">Afternoon</option>
-                            <option value="Day 1">Day 1</option>
-                            <option value="Day 2">Day 2</option>
-                        </select>
+                        <Select
+                            options={sessionOptions}
+                            value={sessionOptions.find(opt => opt.value === session) || sessionOptions[0]}
+                            onChange={(option) => setSession(option ? option.value : 'General')}
+                            isSearchable={false}
+                            styles={selectStyles}
+                        />
                     </div>
 
                     <div className="form-group">
-                        <label>Select Student</label>
-                        <select
-                            className="form-control"
-                            value={selectedStudent}
-                            onChange={(e) => setSelectedStudent(e.target.value)}
-                            required
-                        >
-                            <option value="">-- Select Student --</option>
-                            {Array.isArray(students) && students.map(student => (
-                                <option key={student._id} value={student._id}>
-                                    {student.enrollmentNo ? `${student.enrollmentNo} - ` : ''}{student.name} ({student.email})
-                                </option>
-                            ))}
-                        </select>
+                        <label>Select Students</label>
+                        <Select
+                            isMulti
+                            options={studentOptions}
+                            value={studentOptions.filter(opt => selectedStudents.includes(opt.value))}
+                            onChange={(options) => setSelectedStudents(options ? options.map(opt => opt.value) : [])}
+                            placeholder="-- Select Multiple Students --"
+                            isSearchable
+                            styles={{
+                                ...selectStyles,
+                                multiValue: (provided) => ({
+                                    ...provided,
+                                    backgroundColor: 'var(--primary-color)',
+                                }),
+                                multiValueLabel: (provided) => ({
+                                    ...provided,
+                                    color: 'white',
+                                }),
+                                multiValueRemove: (provided) => ({
+                                    ...provided,
+                                    color: 'white',
+                                    ':hover': {
+                                        backgroundColor: '#bc3333',
+                                        color: 'white',
+                                    },
+                                })
+                            }}
+                        />
                     </div>
 
                     <div className="form-group">
                         <label>Status</label>
-                        <select
-                            className="form-control"
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                        >
-                            <option value="Present">Present</option>
-                            <option value="Late">Late</option>
-                            <option value="Absent">Absent</option>
-                        </select>
+                        <Select
+                            options={statusOptions}
+                            value={statusOptions.find(opt => opt.value === status) || statusOptions[0]}
+                            onChange={(option) => setStatus(option ? option.value : 'Present')}
+                            isSearchable={false}
+                            styles={selectStyles}
+                        />
                     </div>
 
                     <button type="submit" className="btn btn-primary">Mark Attendance</button>
@@ -411,7 +485,6 @@ const Attendance = () => {
                                         <th style={{ padding: '10px' }}>Session</th>
                                         <th style={{ padding: '10px' }}>Status</th>
                                         <th style={{ padding: '10px' }}>Marked At</th>
-                                        <th style={{ padding: '10px' }}>Method</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -458,17 +531,6 @@ const Attendance = () => {
                                             </td>
                                             <td style={{ padding: '10px' }}>
                                                 {new Date(record.markedAt).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '10px' }}>
-                                                <span style={{
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '0.25rem',
-                                                    fontSize: '0.75rem',
-                                                    backgroundColor: record.method === 'qr' ? '#dbeafe' : '#f3f4f6',
-                                                    color: record.method === 'qr' ? '#1e40af' : '#374151'
-                                                }}>
-                                                    {record.method === 'qr' ? '📱 QR' : '✍️ Manual'}
-                                                </span>
                                             </td>
                                         </tr>
                                     ))}

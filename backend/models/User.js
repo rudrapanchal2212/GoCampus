@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['student', 'admin'],
+        enum: ['student', 'coordinator', 'admin'],
         default: 'student'
     },
     // Student Profile Fields (mandatory for students)

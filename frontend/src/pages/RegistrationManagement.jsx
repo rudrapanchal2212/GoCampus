@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import QRCodeGenerator from '../components/QRCodeGenerator';
 import '../styles.css';
 
 const RegistrationManagement = () => {
@@ -22,7 +21,7 @@ const RegistrationManagement = () => {
 
     const fetchEvents = async () => {
         try {
-            const { data } = await axios.get('http://localhost:5000/api/events');
+            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/events`);
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -42,7 +41,7 @@ const RegistrationManagement = () => {
                 },
             };
             const { data } = await axios.get(
-                `http://localhost:5000/api/events/${eventId}`,
+                `http://${window.location.hostname}:5000/api/events/${eventId}`,
                 config
             );
             setSelectedEvent(data);
@@ -64,7 +63,7 @@ const RegistrationManagement = () => {
                 },
             };
             await axios.put(
-                `http://localhost:5000/api/events/${selectedEvent._id}/registrations/${userId}/approve`,
+                `http://${window.location.hostname}:5000/api/events/${selectedEvent._id}/registrations/${userId}/approve`,
                 {},
                 config
             );
@@ -87,7 +86,7 @@ const RegistrationManagement = () => {
                 },
             };
             await axios.put(
-                `http://localhost:5000/api/events/${selectedEvent._id}/registrations/${userId}/reject`,
+                `http://${window.location.hostname}:5000/api/events/${selectedEvent._id}/registrations/${userId}/reject`,
                 {},
                 config
             );
@@ -98,6 +97,68 @@ const RegistrationManagement = () => {
             toast.dismiss(loadingToast);
             console.error('Error rejecting registration:', error);
             toast.error('Failed to reject registration');
+        }
+    };
+
+    const handleApproveAll = async () => {
+        const pendingUsers = registrations.filter(r => r.status === 'pending');
+        if (pendingUsers.length === 0) return;
+        
+        const loadingToast = toast.loading(`Approving ${pendingUsers.length} registrations...`);
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
+            
+            await Promise.all(pendingUsers.map(reg => 
+                axios.put(
+                    `http://${window.location.hostname}:5000/api/events/${selectedEvent._id}/registrations/${reg.user._id}/approve`,
+                    {},
+                    config
+                )
+            ));
+            
+            toast.dismiss(loadingToast);
+            toast.success(`✓ Successfully approved ${pendingUsers.length} registrations!`);
+            await fetchEventDetails(selectedEvent._id);
+        } catch (error) {
+            toast.dismiss(loadingToast);
+            console.error('Error approving all registrations:', error);
+            toast.error('Failed to approve some registrations. Please check and try again.');
+            await fetchEventDetails(selectedEvent._id);
+        }
+    };
+
+    const handleRejectAll = async () => {
+        const pendingUsers = registrations.filter(r => r.status === 'pending');
+        if (pendingUsers.length === 0) return;
+        
+        const loadingToast = toast.loading(`Rejecting ${pendingUsers.length} registrations...`);
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
+            
+            await Promise.all(pendingUsers.map(reg => 
+                axios.put(
+                    `http://${window.location.hostname}:5000/api/events/${selectedEvent._id}/registrations/${reg.user._id}/reject`,
+                    {},
+                    config
+                )
+            ));
+            
+            toast.dismiss(loadingToast);
+            toast.success(`✓ Successfully rejected ${pendingUsers.length} registrations!`);
+            await fetchEventDetails(selectedEvent._id);
+        } catch (error) {
+            toast.dismiss(loadingToast);
+            console.error('Error rejecting all registrations:', error);
+            toast.error('Failed to reject some registrations. Please check and try again.');
+            await fetchEventDetails(selectedEvent._id);
         }
     };
 
@@ -185,14 +246,29 @@ const RegistrationManagement = () => {
                         </div>
                     </div>
 
-                    {/* QR Code Generator */}
-                    <div style={{ marginTop: '2rem' }}>
-                        <QRCodeGenerator eventId={selectedEvent._id} token={user.token} />
-                    </div>
-
                     {/* Registrations List */}
                     <div className="card p-4" style={{ marginTop: '2rem' }}>
-                        <h3>Registrations</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Registrations</h3>
+                            {pendingCount > 0 && (
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button 
+                                        onClick={handleApproveAll}
+                                        className="btn btn-primary"
+                                        style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                    >
+                                        <span>✓</span> Approve All
+                                    </button>
+                                    <button 
+                                        onClick={handleRejectAll}
+                                        className="btn btn-secondary"
+                                        style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                    >
+                                        <span>✗</span> Reject All
+                                    </button>
+                                </div>
+                            )}
+                        </div>
 
                         {loading ? (
                             <p>Loading registrations...</p>
@@ -206,7 +282,7 @@ const RegistrationManagement = () => {
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                                            <th style={{ padding: '10px' }}>Student</th>
+                                            <th style={{ padding: '10px' }}>Student / Team</th>
                                             <th style={{ padding: '10px' }}>Department</th>
                                             <th style={{ padding: '10px' }}>Registered At</th>
                                             <th style={{ padding: '10px' }}>Status</th>
@@ -217,7 +293,7 @@ const RegistrationManagement = () => {
                                         {registrations.map((registration) => (
                                             <tr key={registration._id || registration.user?._id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                                 <td style={{ padding: '10px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                                                         {registration.user?.profilePhoto && (
                                                             <img
                                                                 src={registration.user.profilePhoto}
@@ -231,12 +307,24 @@ const RegistrationManagement = () => {
                                                             />
                                                         )}
                                                         <div>
-                                                            <strong>{registration.user?.name || 'Unknown'}</strong>
+                                                            <strong>{registration.user?.name || 'Unknown'} {registration.teamName ? `(Lead)` : ''}</strong>
                                                             <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                                                                 {registration.user?.email}
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    {registration.teamName && (
+                                                        <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--bg-color)', borderRadius: '4px', fontSize: '0.85rem' }}>
+                                                            <strong>Team: {registration.teamName}</strong>
+                                                            {registration.teamMembers && registration.teamMembers.length > 0 && (
+                                                                <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: 'var(--text-secondary)' }}>
+                                                                    {registration.teamMembers.map(member => (
+                                                                        <li key={member._id || member}>{member.name || 'Student'}</li>
+                                                                    ))}
+                                                                </ul>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td style={{ padding: '10px' }}>
                                                     {registration.user?.department || 'N/A'}

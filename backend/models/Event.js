@@ -18,9 +18,16 @@ const EventSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    endTime: {
+        type: String
+    },
     location: {
-        type: String,
+        type: String, // Kept as fallback or specific instruction, but venue is used for booking
         required: true
+    },
+    venue: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Venue'
     },
     organizer: {
         type: String,
@@ -55,11 +62,28 @@ const EventSchema = new mongoose.Schema({
         type: Number,
         default: 0 // 0 means unlimited
     },
+    isTeamEvent: {
+        type: Boolean,
+        default: false
+    },
+    minTeamSize: {
+        type: Number,
+        default: 1
+    },
+    maxTeamSize: {
+        type: Number,
+        default: 1
+    },
     registrations: [{
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         },
+        teamName: String,
+        teamMembers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
         status: {
             type: String,
             enum: ['pending', 'approved', 'rejected'],
@@ -79,15 +103,34 @@ const EventSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    qrCode: {
-        type: String // Base64 encoded QR code
-    },
-    qrCodeExpiry: {
-        type: Date
-    },
+    reviews: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        rating: {
+            type: Number,
+            required: true,
+            min: 1,
+            max: 5
+        },
+        comment: {
+            type: String,
+            required: true
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     isActive: {
         type: Boolean,
         default: true
+    },
+    isApproved: {
+        type: Boolean,
+        default: false
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -103,12 +146,12 @@ const EventSchema = new mongoose.Schema({
 
 // Virtual for registration count
 EventSchema.virtual('registrationCount').get(function () {
-    return this.registrations.filter(r => r.status === 'approved').length;
+    return this.registrations ? this.registrations.filter(r => r.status === 'approved').length : 0;
 });
 
 // Virtual for pending count
 EventSchema.virtual('pendingCount').get(function () {
-    return this.registrations.filter(r => r.status === 'pending').length;
+    return this.registrations ? this.registrations.filter(r => r.status === 'pending').length : 0;
 });
 
 // Virtual for event status
@@ -125,6 +168,13 @@ EventSchema.virtual('eventStatus').get(function () {
     } else {
         return 'past';
     }
+});
+
+// Virtual for average rating
+EventSchema.virtual('averageRating').get(function () {
+    if (!this.reviews || this.reviews.length === 0) return 0;
+    const sum = this.reviews.reduce((total, review) => total + review.rating, 0);
+    return (sum / this.reviews.length).toFixed(1);
 });
 
 // Ensure virtuals are included in JSON

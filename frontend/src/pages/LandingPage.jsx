@@ -67,7 +67,6 @@ const LandingPage = () => {
                 <ul className="landing-nav-links">
                     <li><a href="#about">About</a></li>
                     <li><a href="#features">Features</a></li>
-                    <li><a href="#how-it-works">How It Works</a></li>
                     <li><a href="#gallery">Gallery</a></li>
                 </ul>
                 <div className="landing-auth-links">
@@ -151,7 +150,6 @@ const LandingPage = () => {
                         <ul className="check-list">
                             <li>Eliminate paperwork and long queues.</li>
                             <li>Real-time notifications for event updates.</li>
-                            <li>Secure QR code based attendance.</li>
                         </ul>
                     </div>
                 </div>

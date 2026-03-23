@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import NoticeBoardWidget from './NoticeBoardWidget';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -35,7 +36,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user && user.role === 'admin') {
+        if (user && (user.role === 'admin' || user.role === 'coordinator')) {
             fetchAnalytics();
         } else {
             fetchBasicStats();
@@ -49,7 +50,7 @@ const Dashboard = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get('http://localhost:5000/api/analytics/dashboard', config);
+            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/analytics/dashboard`, config);
             setAnalytics(data);
             setLoading(false);
         } catch (error) {
@@ -60,7 +61,7 @@ const Dashboard = () => {
 
     const fetchBasicStats = async () => {
         try {
-            const eventsRes = await axios.get('http://localhost:5000/api/events');
+            const eventsRes = await axios.get(`http://${window.location.hostname}:5000/api/events`);
             setAnalytics({
                 summary: {
                     totalEvents: eventsRes.data.events?.length || 0,
@@ -145,6 +146,9 @@ const Dashboard = () => {
                 Welcome back, <strong>{user?.name}</strong>! You are logged in as <strong>{user?.role}</strong>.
             </p>
 
+            {/* Notice Board — visible to all roles */}
+            <NoticeBoardWidget />
+
             {/* Summary Cards */}
             <div className="grid dashboard-stats">
                 <div className="card stat-card">
@@ -163,7 +167,7 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {user?.role === 'admin' && analytics && (
+            {(user?.role === 'admin' || user?.role === 'coordinator') && analytics && (
                 <>
                     {/* Charts Row */}
                     <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>

@@ -37,8 +37,8 @@ const ProtectedRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  if (user && user.role === 'admin') return children;
-  return <Navigate to="/dashboard" />; // Redirect to dashboard if not admin
+  if (user && (user.role === 'admin' || user.role === 'coordinator')) return children;
+  return <Navigate to="/dashboard" />; // Redirect to dashboard if not admin or coordinator
 };
 
 // Profile Route (for students who haven't completed profile)

@@ -18,7 +18,8 @@
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.8.9",
-    "qrcode": "^1.5.4"
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

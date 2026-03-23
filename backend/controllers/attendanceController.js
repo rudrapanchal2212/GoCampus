@@ -174,19 +174,43 @@ const exportAttendanceCSV = asyncHandler(async (req, res) => {
         .sort({ markedAt: -1 });
 
     // Transform data for CSV
-    const data = attendance.map(record => ({
-        'Student Name': record.student?.name || 'N/A',
-        'Email': record.student?.email || 'N/A',
-        'Enrollment No': record.student?.enrollmentNo || 'N/A',
-        'Department': record.student?.department || 'N/A',
-        'Event': record.event?.title || 'N/A',
-        'Event Date': record.event?.date ? new Date(record.event.date).toLocaleDateString() : 'N/A',
-        'Session': record.session,
-        'Status': record.status,
-        'Marked At': new Date(record.markedAt).toLocaleString(),
-        'Method': record.method,
-        'Notes': record.notes || ''
-    }));
+    const data = attendance.map(record => {
+        // Handle dates properly
+        let eventDateStr = 'N/A';
+        if (record.event?.date) {
+            const d = new Date(record.event.date);
+            if (!isNaN(d.getTime())) {
+                eventDateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            }
+        }
+
+        let markedAtStr = 'N/A';
+        if (record.markedAt) {
+            const d = new Date(record.markedAt);
+            if (!isNaN(d.getTime())) {
+                markedAtStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+            }
+        }
+
+        // Fix enrollment number format for Excel (force as string)
+        const enrollmentStr = record.student?.enrollmentNo 
+            ? `\t${record.student.enrollmentNo}` 
+            : 'N/A';
+
+        return {
+            'Student Name': record.student?.name || 'N/A',
+            'Email': record.student?.email || 'N/A',
+            'Enrollment No': enrollmentStr,
+            'Department': record.student?.department || 'N/A',
+            'Event': record.event?.title || 'N/A',
+            'Event Date': eventDateStr,
+            'Session': record.session,
+            'Status': record.status,
+            'Marked At': markedAtStr,
+            'Method': record.method,
+            'Notes': record.notes || ''
+        };
+    });
 
     const parser = new Parser();
     const csv = parser.parse(data);

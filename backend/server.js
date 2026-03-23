@@ -7,11 +7,15 @@ const connectDB = require('./config/db');
 const eventRoutes = require('./routes/eventRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const { startReminderJob } = require('./utils/reminderJob');
 
 dotenv.config();
 
 // Connect to MongoDB
 connectDB();
+
+// Start scheduled jobs
+startReminderJob();
 
 const app = express();
 
@@ -23,9 +27,11 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/events', eventRoutes);
+app.use('/api/venues', require('./routes/venueRoutes'));
 app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/announcements', require('./routes/announcementRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

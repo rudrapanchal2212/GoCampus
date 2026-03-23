@@ -16,7 +16,10 @@ const AddEvent = () => {
         category: 'Other',
         tags: '',
         registrationLimit: 0,
-        subEvents: []
+        subEvents: [],
+        isTeamEvent: false,
+        minTeamSize: 1,
+        maxTeamSize: 1
     });
     const [isEditMode, setIsEditMode] = useState(false);
     const { state } = useLocation();
@@ -26,7 +29,7 @@ const AddEvent = () => {
     useEffect(() => {
         if (state && state.event) {
             setIsEditMode(true);
-            const { title, description, date, time, location, organizer, category, tags, registrationLimit, subEvents } = state.event;
+            const { title, description, date, time, location, organizer, category, tags, registrationLimit, subEvents, isTeamEvent, minTeamSize, maxTeamSize } = state.event;
             const formattedDate = new Date(date).toISOString().split('T')[0];
             setFormData({
                 title,
@@ -38,13 +41,17 @@ const AddEvent = () => {
                 category: category || 'Other',
                 tags: tags ? tags.join(', ') : '',
                 registrationLimit: registrationLimit || 0,
-                subEvents: subEvents || []
+                subEvents: subEvents || [],
+                isTeamEvent: isTeamEvent || false,
+                minTeamSize: minTeamSize || 1,
+                maxTeamSize: maxTeamSize || 1
             });
         }
     }, [state]);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        setFormData({ ...formData, [e.target.name]: value });
     };
 
     const handleSubEventChange = (index, e) => {
@@ -84,10 +91,10 @@ const AddEvent = () => {
 
         try {
             if (isEditMode) {
-                await axios.put(`http://localhost:5000/api/events/${state.event._id}`, eventData, config);
+                await axios.put(`http://${window.location.hostname}:5000/api/events/${state.event._id}`, eventData, config);
                 toast.success('Event Updated Successfully!');
             } else {
-                await axios.post('http://localhost:5000/api/events', eventData, config);
+                await axios.post(`http://${window.location.hostname}:5000/api/events`, eventData, config);
                 toast.success('Event Created Successfully!');
             }
             navigate('/events');
@@ -220,6 +227,48 @@ const AddEvent = () => {
                         Set to 0 for unlimited registrations
                     </small>
                 </div>
+
+                <div className="form-group">
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="isTeamEvent"
+                            checked={formData.isTeamEvent}
+                            onChange={handleChange}
+                            style={{ marginRight: '0.5rem' }}
+                        />
+                        This is a Team / Group Event
+                    </label>
+                </div>
+
+                {formData.isTeamEvent && (
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                        <div className="form-group" style={{ flex: 1 }}>
+                            <label>Minimum Team Size</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                name="minTeamSize"
+                                value={formData.minTeamSize}
+                                onChange={handleChange}
+                                min="1"
+                                required={formData.isTeamEvent}
+                            />
+                        </div>
+                        <div className="form-group" style={{ flex: 1 }}>
+                            <label>Maximum Team Size</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                name="maxTeamSize"
+                                value={formData.maxTeamSize}
+                                onChange={handleChange}
+                                min="1"
+                                required={formData.isTeamEvent}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 <div className="form-group mb-4">
                     <h3>Sub Events</h3>

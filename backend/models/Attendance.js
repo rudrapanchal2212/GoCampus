@@ -29,11 +29,6 @@ const AttendanceSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User' // Admin who marked attendance
     },
-    method: {
-        type: String,
-        enum: ['manual', 'qr'],
-        default: 'manual'
-    },
     notes: {
         type: String
     }

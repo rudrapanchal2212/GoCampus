@@ -155,9 +155,14 @@ const getDashboardAnalytics = asyncHandler(async (req, res) => {
         }
     ]);
 
-    const attendanceRate = totalPossibleAttendance.length > 0 && totalPossibleAttendance[0].total > 0
-        ? ((totalAttendance / totalPossibleAttendance[0].total) * 100).toFixed(2)
+    let rawAttendanceRate = totalPossibleAttendance.length > 0 && totalPossibleAttendance[0].total > 0
+        ? ((totalAttendance / totalPossibleAttendance[0].total) * 100)
         : 0;
+        
+    if (rawAttendanceRate > 100) rawAttendanceRate = 100;
+    if (rawAttendanceRate < 0) rawAttendanceRate = 0;
+    
+    const attendanceRate = rawAttendanceRate.toFixed(2);
 
     res.json({
         summary: {

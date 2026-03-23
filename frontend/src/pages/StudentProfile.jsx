@@ -10,6 +10,7 @@ const StudentProfile = () => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
+        email: '',
         enrollmentNo: '',
         phoneNumber: '',
         aadhaarCard: '',
@@ -22,6 +23,7 @@ const StudentProfile = () => {
     useEffect(() => {
         if (user) {
             setFormData({
+                email: user.email || '',
                 enrollmentNo: user.enrollmentNo || '',
                 phoneNumber: user.phoneNumber || '',
                 aadhaarCard: user.aadhaarCard || '',
@@ -54,7 +56,7 @@ const StudentProfile = () => {
         e.preventDefault();
 
         // Validation
-        if (!formData.enrollmentNo || !formData.phoneNumber || !formData.aadhaarCard ||
+        if (!formData.email || !formData.enrollmentNo || !formData.phoneNumber || !formData.aadhaarCard ||
             !formData.fullName || !formData.profilePhoto) {
             toast.error('All fields are mandatory!');
             return;
@@ -68,7 +70,7 @@ const StudentProfile = () => {
             };
 
             const { data } = await axios.put(
-                'http://localhost:5000/api/users/profile',
+                `http://${window.location.hostname}:5000/api/users/profile`,
                 formData,
                 config
             );
@@ -101,6 +103,19 @@ const StudentProfile = () => {
                         onChange={handleChange}
                         required
                         placeholder="Enter your full name"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label>Email Address *</label>
+                    <input
+                        type="email"
+                        className="form-control"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        placeholder="e.g., yourname@example.com"
                     />
                 </div>
 

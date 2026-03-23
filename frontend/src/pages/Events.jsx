@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import QRScanner from '../components/QRScanner';
 import '../styles.css';
 
 const Events = () => {
@@ -12,15 +11,33 @@ const Events = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    const [showQRScanner, setShowQRScanner] = useState(false);
-    const [selectedEventForQR, setSelectedEventForQR] = useState(null);
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [selectedEventForReview, setSelectedEventForReview] = useState(null);
+    const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+    const [showTeamModal, setShowTeamModal] = useState(false);
+    const [selectedTeamEvent, setSelectedTeamEvent] = useState(null);
+    const [teamForm, setTeamForm] = useState({ teamName: '', teamMembers: [] });
+    const [studentList, setStudentList] = useState([]);
 
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
         fetchEvents();
-    }, [categoryFilter, statusFilter]);
+        if (user) {
+            fetchStudentsList();
+        }
+    }, [categoryFilter, statusFilter, user]);
+
+    const fetchStudentsList = async () => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/users/students`, config);
+            if (Array.isArray(data)) setStudentList(data.filter(s => s._id !== user._id));
+        } catch (error) {
+            console.error("Could not fetch students", error);
+        }
+    };
 
     useEffect(() => {
         filterEvents();
@@ -28,11 +45,12 @@ const Events = () => {
 
     const fetchEvents = async () => {
         try {
-            let url = 'http://localhost:5000/api/events?limit=100';
+            let url = `http://${window.location.hostname}:5000/api/events?limit=100`;
             if (categoryFilter) url += `&category=${categoryFilter}`;
             if (statusFilter) url += `&status=${statusFilter}`;
 
-            const { data } = await axios.get(url);
+            const config = user?.token ? { headers: { Authorization: `Bearer ${user.token}` } } : {};
+            const { data } = await axios.get(url, config);
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -63,7 +81,14 @@ const Events = () => {
         setFilteredEvents(filtered);
     };
 
-    const handleRegister = async (eventId) => {
+    const handleRegister = async (event) => {
+        if (event.isTeamEvent) {
+            setSelectedTeamEvent(event);
+            setTeamForm({ teamName: '', teamMembers: [] });
+            setShowTeamModal(true);
+            return;
+        }
+
         try {
             const config = {
                 headers: {
@@ -71,7 +96,7 @@ const Events = () => {
                 },
             };
             const { data } = await axios.post(
-                `http://localhost:5000/api/events/${eventId}/register`,
+                `http://${window.location.hostname}:5000/api/events/${event._id}/register`,
                 {},
                 config
             );
@@ -83,6 +108,24 @@ const Events = () => {
         }
     };
 
+    const handleTeamRegisterSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.post(
+                `http://${window.location.hostname}:5000/api/events/${selectedTeamEvent._id}/register`,
+                teamForm,
+                config
+            );
+            toast.success(data.message);
+            setShowTeamModal(false);
+            fetchEvents();
+        } catch (error) {
+            console.error("Error team register:", error);
+            toast.error(error.response?.data?.message || "Failed to register team");
+        }
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this event?')) {
             try {
@@ -91,13 +134,59 @@ const Events = () => {
                         Authorization: `Bearer ${user.token}`,
                     },
                 };
-                await axios.delete(`http://localhost:5000/api/events/${id}`, config);
+                await axios.delete(`http://${window.location.hostname}:5000/api/events/${id}`, config);
                 toast.success('Event deleted successfully');
                 fetchEvents();
             } catch (error) {
                 console.error("Error deleting event:", error);
                 toast.error("Failed to delete event");
             }
+        }
+    };
+
+    const handleApproveEvent = async (id) => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.put(`http://${window.location.hostname}:5000/api/events/${id}/approve`, {}, config);
+            toast.success('Event approved');
+            fetchEvents();
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to approve event');
+        }
+    };
+
+    const handleRejectEvent = async (id) => {
+        if (window.confirm('Reject and delete this event proposal?')) {
+            try {
+                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                await axios.put(`http://${window.location.hostname}:5000/api/events/${id}/reject`, {}, config);
+                toast.success('Event proposal rejected');
+                fetchEvents();
+            } catch (error) {
+                console.error(error);
+                toast.error('Failed to reject event');
+            }
+        }
+    };
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.post(
+                `http://${window.location.hostname}:5000/api/events/${selectedEventForReview}/reviews`,
+                reviewForm,
+                config
+            );
+            toast.success(data.message);
+            setShowReviewModal(false);
+            setSelectedEventForReview(null);
+            setReviewForm({ rating: 5, comment: '' });
+            fetchEvents();
+        } catch (error) {
+            console.error("Error adding review:", error);
+            toast.error(error.response?.data?.message || "Failed to add review");
         }
     };
 
@@ -165,14 +254,16 @@ const Events = () => {
     const isUserRegistered = (event) => {
         if (!user || !event.registrations) return false;
         return event.registrations.some(reg =>
-            (reg.user?._id || reg.user) === user._id
+            (reg.user?._id || reg.user) === user._id ||
+            (reg.teamMembers && reg.teamMembers.some(m => (m._id || m) === user._id))
         );
     };
 
     const getUserRegistrationStatus = (event) => {
         if (!user || !event.registrations) return null;
         const registration = event.registrations.find(reg =>
-            (reg.user?._id || reg.user) === user._id
+            (reg.user?._id || reg.user) === user._id ||
+            (reg.teamMembers && reg.teamMembers.some(m => (m._id || m) === user._id))
         );
         return registration?.status;
     };
@@ -181,7 +272,7 @@ const Events = () => {
         <div className="container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2>Events</h2>
-                {user?.role === 'admin' && (
+                {(user?.role === 'admin' || user?.role === 'coordinator') && (
                     <button onClick={() => navigate('/add-event')} className="btn btn-primary">
                         + Add Event
                     </button>
@@ -249,8 +340,26 @@ const Events = () => {
                         return (
                             <div key={event._id} className="card event-card">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                    {getStatusBadge(eventStatus)}
-                                    {event.category && getCategoryBadge(event.category)}
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        {getStatusBadge(eventStatus)}
+                                        {event.isApproved === false && (
+                                            <span style={{
+                                                padding: '0.25rem 0.75rem', borderRadius: '1rem',
+                                                fontSize: '0.875rem', fontWeight: 'bold',
+                                                backgroundColor: '#fee2e2', color: '#b91c1c'
+                                            }}>
+                                                Waiting Approval
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        {event.averageRating > 0 && (
+                                            <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 'bold' }}>
+                                                ⭐ {event.averageRating}
+                                            </span>
+                                        )}
+                                        {event.category && getCategoryBadge(event.category)}
+                                    </div>
                                 </div>
 
                                 <h3 style={{ marginBottom: '0.5rem' }}>{event.title}</h3>
@@ -319,7 +428,12 @@ const Events = () => {
                                             <span>👥 Registrations:</span>
                                             <strong>{event.registrationCount}{event.registrationLimit > 0 ? ` / ${event.registrationLimit}` : ''}</strong>
                                         </div>
-                                        {event.pendingCount > 0 && user?.role === 'admin' && (
+                                        {event.isTeamEvent && (
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>
+                                                🏆 Team Event (Size: {event.minTeamSize} - {event.maxTeamSize})
+                                            </div>
+                                        )}
+                                        {event.pendingCount > 0 && (user?.role === 'admin' || user?.role === 'coordinator') && (
                                             <div style={{ marginTop: '0.5rem', color: 'var(--warning-color)' }}>
                                                 ⏳ {event.pendingCount} pending approval
                                             </div>
@@ -327,8 +441,46 @@ const Events = () => {
                                     </div>
                                 )}
 
+                                {/* Reviews */}
+                                {event.reviews && event.reviews.length > 0 && (
+                                    <div style={{
+                                        marginTop: '1rem',
+                                        padding: '1rem',
+                                        backgroundColor: 'var(--surface-color)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '0.5rem'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                            <h4 style={{ margin: 0, fontSize: '1rem' }}>Reviews ({event.reviews.length})</h4>
+                                            <span style={{ fontSize: '0.9rem', color: '#f59e0b', fontWeight: 'bold' }}>
+                                                ⭐ {event.averageRating} Avg
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {event.reviews.slice(0, 3).map((review, idx) => (
+                                                <div key={idx} style={{ 
+                                                    borderBottom: idx < Math.min(event.reviews.length - 1, 2) ? '1px solid var(--border-color)' : 'none',
+                                                    paddingBottom: idx < Math.min(event.reviews.length - 1, 2) ? '0.75rem' : 0
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                            {review.user?.name || 'Student'}
+                                                        </span>
+                                                        <span style={{ fontSize: '0.85rem', color: '#f59e0b' }}>
+                                                            {'⭐'.repeat(review.rating)}
+                                                        </span>
+                                                    </div>
+                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary)', fontStyle: 'italic' }}>
+                                                        "{review.comment}"
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Student Actions */}
-                                {user?.role === 'student' && (
+                                {user?.role === 'student' && event.isApproved && (
                                     <div style={{ marginTop: '1rem' }}>
                                         {isRegistered ? (
                                             <div>
@@ -345,22 +497,22 @@ const Events = () => {
                                                     {registrationStatus === 'pending' && '⏳ Pending Approval'}
                                                     {registrationStatus === 'rejected' && '✗ Registration Rejected'}
                                                 </div>
-                                                {registrationStatus === 'approved' && eventStatus !== 'past' && (
+                                                {eventStatus === 'past' && registrationStatus === 'approved' && (
                                                     <button
                                                         onClick={() => {
-                                                            setSelectedEventForQR(event._id);
-                                                            setShowQRScanner(true);
+                                                            setSelectedEventForReview(event._id);
+                                                            setShowReviewModal(true);
                                                         }}
-                                                        className="btn btn-secondary"
-                                                        style={{ width: '100%' }}
+                                                        className="btn btn-primary"
+                                                        style={{ width: '100%', marginTop: '0.5rem' }}
                                                     >
-                                                        📱 Scan QR for Attendance
+                                                        ⭐ Leave a Review
                                                     </button>
                                                 )}
                                             </div>
                                         ) : (
                                             <button
-                                                onClick={() => handleRegister(event._id)}
+                                                onClick={() => handleRegister(event)}
                                                 className="btn btn-primary"
                                                 style={{ width: '100%' }}
                                                 disabled={eventStatus === 'past'}
@@ -371,8 +523,8 @@ const Events = () => {
                                     </div>
                                 )}
 
-                                {/* Admin Actions */}
-                                {user?.role === 'admin' && (
+                                {/* Admin / Coordinator Actions */}
+                                {(user?.role === 'admin' || user?.role === 'coordinator') && (
                                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                                         <button
                                             onClick={() => navigate(`/edit-event/${event._id}`)}
@@ -390,58 +542,121 @@ const Events = () => {
                                         </button>
                                     </div>
                                 )}
+                                {(user?.role === 'admin' || user?.role === 'coordinator') && !event.isApproved && (
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                        <button onClick={() => handleApproveEvent(event._id)} className="btn btn-primary" style={{ flex: 1, backgroundColor: '#10b981' }}>
+                                            Approve
+                                        </button>
+                                        <button onClick={() => handleRejectEvent(event._id)} className="btn btn-secondary" style={{ flex: 1, backgroundColor: '#ef4444', color: 'white' }}>
+                                            Reject
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
             )}
 
-            {/* QR Scanner Modal */}
-            {showQRScanner && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: '1rem'
-                }}>
-                    <div style={{ maxWidth: '600px', width: '100%', position: 'relative' }}>
-                        <button
-                            onClick={() => {
-                                setShowQRScanner(false);
-                                setSelectedEventForQR(null);
-                            }}
-                            style={{
-                                position: 'absolute',
-                                top: '-10px',
-                                right: '-10px',
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                border: 'none',
-                                backgroundColor: 'white',
-                                fontSize: '1.5rem',
-                                cursor: 'pointer',
-                                zIndex: 1001
-                            }}
-                        >
-                            ×
-                        </button>
-                        <QRScanner
-                            eventId={selectedEventForQR}
-                            token={user.token}
-                            onSuccess={() => {
-                                setShowQRScanner(false);
-                                setSelectedEventForQR(null);
-                                fetchEvents();
-                            }}
-                        />
+            {/* Review Modal */}
+            {showReviewModal && (
+                <div className="modal-overlay">
+                    <div className="card p-4" style={{ width: '100%', maxWidth: '400px' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>Leave a Review</h3>
+                        <form onSubmit={handleReviewSubmit}>
+                            <div className="form-group">
+                                <label>Rating (1-5)</label>
+                                <select
+                                    className="form-control"
+                                    value={reviewForm.rating}
+                                    onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}
+                                >
+                                    <option value={5}>⭐⭐⭐⭐⭐ (5) Excellent</option>
+                                    <option value={4}>⭐⭐⭐⭐ (4) Good</option>
+                                    <option value={3}>⭐⭐⭐ (3) Average</option>
+                                    <option value={2}>⭐⭐ (2) Poor</option>
+                                    <option value={1}>⭐ (1) Terrible</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Review Comment</label>
+                                <textarea
+                                    className="form-control"
+                                    rows="4"
+                                    value={reviewForm.comment}
+                                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                                    required
+                                    placeholder="Tell us what you thought about the event..."
+                                ></textarea>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                                    Submit Review
+                                </button>
+                                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowReviewModal(false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Team Registration Modal */}
+            {showTeamModal && selectedTeamEvent && (
+                <div className="modal-overlay">
+                    <div className="card p-4" style={{ width: '100%', maxWidth: '450px' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>Team Registration</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            Registering for <strong>{selectedTeamEvent.title}</strong>
+                        </p>
+                        <form onSubmit={handleTeamRegisterSubmit}>
+                            <div className="form-group">
+                                <label>Team Name <span style={{ color: 'red' }}>*</span></label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={teamForm.teamName}
+                                    onChange={(e) => setTeamForm({ ...teamForm, teamName: e.target.value })}
+                                    required
+                                    placeholder="Enter your team's name"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Select Team Members (Required {selectedTeamEvent.minTeamSize - 1} - Max {selectedTeamEvent.maxTeamSize - 1})</label>
+                                <small style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+                                    Hold Ctrl/Cmd to select multiple students. You are automatically included.
+                                </small>
+                                <select
+                                    multiple
+                                    className="form-control"
+                                    style={{ minHeight: '120px' }}
+                                    value={teamForm.teamMembers}
+                                    onChange={(e) => {
+                                        const values = Array.from(e.target.selectedOptions, option => option.value);
+                                        if (values.length <= selectedTeamEvent.maxTeamSize - 1) {
+                                            setTeamForm({ ...teamForm, teamMembers: values });
+                                        } else {
+                                            toast.warning(`You can only select up to ${selectedTeamEvent.maxTeamSize - 1} members`);
+                                        }
+                                    }}
+                                >
+                                    {studentList.map(student => (
+                                        <option key={student._id} value={student._id}>
+                                            {student.fullName || student.name} ({student.email})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                                    Submit Team
+                                </button>
+                                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowTeamModal(false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

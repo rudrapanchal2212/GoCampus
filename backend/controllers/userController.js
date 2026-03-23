@@ -156,7 +156,7 @@ const getMe = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/profile
 // @access  Private
 const updateProfile = asyncHandler(async (req, res) => {
-    const { enrollmentNo, phoneNumber, aadhaarCard, fullName, profilePhoto } = req.body;
+    const { email, enrollmentNo, phoneNumber, aadhaarCard, fullName, profilePhoto } = req.body;
 
     const user = await User.findById(req.user._id);
 
@@ -166,6 +166,15 @@ const updateProfile = asyncHandler(async (req, res) => {
     }
 
     // Update profile fields
+    if (email) {
+        // Check if email already exists
+        const emailExists = await User.findOne({ email });
+        if (emailExists && emailExists._id.toString() !== user._id.toString()) {
+            res.status(400);
+            throw new Error('Email already in use');
+        }
+        user.email = email;
+    }
     if (enrollmentNo) user.enrollmentNo = enrollmentNo;
     if (phoneNumber) user.phoneNumber = phoneNumber;
     if (aadhaarCard) user.aadhaarCard = aadhaarCard;
@@ -196,10 +205,40 @@ const updateProfile = asyncHandler(async (req, res) => {
 
 // @desc    Get all students
 // @route   GET /api/users/students
+// @desc    Get all students and coordinators
+// @route   GET /api/users/students
 // @access  Private (Admin)
 const getAllStudents = asyncHandler(async (req, res) => {
-    const students = await User.find({ role: 'student' }).select('-password');
+    const students = await User.find({ role: { $in: ['student', 'coordinator'] } }).select('-password');
     res.json(students);
+});
+
+// @desc    Change user role
+// @route   PUT /api/users/:id/role
+// @access  Private (Admin)
+const changeUserRole = asyncHandler(async (req, res) => {
+    if (req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only administrators can change roles');
+    }
+
+    const { role } = req.body;
+    
+    if (!['student', 'coordinator'].includes(role)) {
+        res.status(400);
+        throw new Error('Invalid role');
+    }
+
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+        user.role = role;
+        await user.save();
+        res.json({ message: 'User role updated', user: { _id: user._id, name: user.name, role: user.role } });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
 });
 
 // Generate JWT
@@ -216,4 +255,5 @@ module.exports = {
     getMe,
     updateProfile,
     getAllStudents,
+    changeUserRole
 };

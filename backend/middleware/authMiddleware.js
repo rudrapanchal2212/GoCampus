@@ -39,12 +39,22 @@ const protect = asyncHandler(async (req, res, next) => {
 
 // Admin middleware
 const admin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'coordinator')) {
         next();
     } else {
         res.status(403);
-        throw new Error('Not authorized as admin');
+        throw new Error('Not authorized as admin or coordinator');
     }
 };
 
-module.exports = { protect, admin };
+// Admin or Coordinator middleware
+const adminOrCoordinator = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'coordinator')) {
+        next();
+    } else {
+        res.status(403);
+        throw new Error('Not authorized as admin or coordinator');
+    }
+};
+
+module.exports = { protect, admin, adminOrCoordinator };

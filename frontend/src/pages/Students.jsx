@@ -20,11 +20,29 @@ const Students = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get('http://localhost:5000/api/users/students', config);
+            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/users/students`, config);
             setStudents(data);
         } catch (error) {
             console.error("Error fetching students:", error);
             toast.error("Failed to fetch students");
+        }
+    };
+
+    const handleRoleChange = async (userId, newRole) => {
+        if (user?.role !== 'admin') {
+            toast.error("Only administrators can change roles");
+            return;
+        }
+        try {
+            const config = {
+                headers: { Authorization: `Bearer ${user.token}` },
+            };
+            await axios.put(`http://${window.location.hostname}:5000/api/users/${userId}/role`, { role: newRole }, config);
+            toast.success("Role updated successfully");
+            fetchStudents();
+        } catch (error) {
+            console.error("Error updating role:", error);
+            toast.error("Failed to update role");
         }
     };
 
@@ -50,6 +68,7 @@ const Students = () => {
                                 <th style={{ padding: '10px' }}>Department</th>
                                 <th style={{ padding: '10px' }}>Enrollment No</th>
                                 <th style={{ padding: '10px' }}>Phone</th>
+                                <th style={{ padding: '10px' }}>Role</th>
                                 <th style={{ padding: '10px' }}>Profile Status</th>
                             </tr>
                         </thead>
@@ -78,6 +97,18 @@ const Students = () => {
                                     <td style={{ padding: '10px' }}>{student.enrollmentNo || 'Not provided'}</td>
                                     <td style={{ padding: '10px' }}>{student.phoneNumber || 'Not provided'}</td>
                                     <td style={{ padding: '10px' }}>
+                                        <select
+                                            className="form-control"
+                                            value={student.role}
+                                            onChange={(e) => handleRoleChange(student._id, e.target.value)}
+                                            style={{ padding: '4px', fontSize: '0.85rem' }}
+                                            disabled={user?.role !== 'admin'}
+                                        >
+                                            <option value="student">Student</option>
+                                            <option value="coordinator">Coordinator</option>
+                                        </select>
+                                    </td>
+                                    <td style={{ padding: '10px' }}>
                                         <span style={{
                                             padding: '4px 8px',
                                             borderRadius: '4px',
@@ -100,7 +131,7 @@ const Students = () => {
                 <h4>ℹ️ Note</h4>
                 <p style={{ margin: 0, color: '#666' }}>
                     Students are automatically added when they sign up on the platform.
-                    They must complete their profile with enrollment number, phone, Aadhaar, and photo.
+                    You can promote a student to <b>Coordinator</b>, allowing them to create event proposals for your approval.
                 </p>
             </div>
         </div>

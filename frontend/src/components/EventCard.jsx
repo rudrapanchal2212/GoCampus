@@ -28,7 +28,7 @@ const EventCard = ({ event, user, onDelete, onEdit, onRegister }) => {
             </p>
 
             <div className="event-actions" style={{ marginTop: '15px' }}>
-                {user && user.role === 'admin' && (
+                {user && (user.role === 'admin' || user.role === 'coordinator') && (
                     <>
                         <button onClick={() => onEdit(event)} className="btn btn-primary" style={{ marginRight: '10px' }}>
                             Edit

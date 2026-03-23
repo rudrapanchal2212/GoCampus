@@ -30,7 +30,7 @@ const Navbar = () => {
                             <li><Link to="/profile">My Profile</Link></li>
                         )}
 
-                        {user.role === 'admin' && (
+                        {(user.role === 'admin' || user.role === 'coordinator') && (
                             <>
                                 <li><Link to="/add-event">Add Event</Link></li>
                                 <li><Link to="/students">Students</Link></li>
