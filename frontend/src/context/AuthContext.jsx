@@ -18,7 +18,8 @@ export const AuthProvider = ({ children }) => {
 
     // Login
     const login = async (userData) => {
-        const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "");
+        let apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "");
+        if (!apiUrl.startsWith('http')) apiUrl = `https://${apiUrl}`;
         console.warn(`[API] Attempting login to: ${apiUrl}/api/users/login`);
         try {
             const res = await axios.post(`${apiUrl}/api/users/login`, userData);

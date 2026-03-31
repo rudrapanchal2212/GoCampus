@@ -54,8 +54,9 @@ This guide provides instructions on how to deploy the GoCampus project to **Rail
 If you see a red "Login Failed" toast:
 1.  **Open Browser Console (F12)**: Check the `Network` tab or `Console`.
 2.  If you see `http://localhost:5000/api/users/login`, **Vercel is not using your environment variable!**.
-3.  **Fix**: Go to Vercel -> Settings -> Environment Variables. Add `VITE_API_URL` -> `https://gocampus-production.up.railway.app`.
-4.  **Re-deploy**: You **must** trigger a new deployment for the changes to take effect! (Go to "Deployments" tab -> click three dots -> "Redeploy").
-5.  Check **Railway Logs**: Ensure the `JWT_SECRET` matches your local secret or `secret123`.
+3.  **Fix**: Go to Vercel -> Settings -> Environment Variables. Add `VITE_API_URL` -> `https://gocampus-production.up.railway.app`. **Ensure it starts with `https://`**.
+4.  **Redeploy**: You **must** trigger a new deployment for the changes to take effect! (Go to "Deployments" tab -> click three dots -> "Redeploy").
+5.  **Relative Pathing Debug**: If the console shows a 404 error at `your-app.vercel.app/your-backend.railway.app/...`, it means the `https://` is missing, and the browser thinks it's a local folder!
+6.  Check **Railway Logs**: Ensure the `JWT_SECRET` matches your local secret or `secret123`.
 
 Happy Deploying! 🎉
