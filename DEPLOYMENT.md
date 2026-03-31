@@ -11,7 +11,8 @@ This guide provides instructions on how to deploy the GoCampus project to **Rail
 ### **Steps**
 1. Log in to Railway and click **"New Project"**.
 2. Select **"Deploy from GitHub repo"** and choose your repository.
-3. Railway will detect the `backend` folder (if you've pointed to it) or the root. Ensure you are deploying the `backend` subdirectory.
+3. Railway will detect the repository. **Crucial Step**: Because this is a monorepo, you must go to **Settings** -> **General** -> **Root Directory** and set it to `backend`.
+   - Alternatively, the `railway.json` and `start.sh` files I've added to the root will handle this automatically.
 4. Go to the **Variables** tab in Railway and add the following environment variables:
    - `MONGO_URI`: Your MongoDB Atlas connection string.
    - `JWT_SECRET`: A secure random string.
