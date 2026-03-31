@@ -4,6 +4,7 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import '../styles.css';
+import getApiUrl from '../utils/apiConfig';
 
 const SelectStudents = () => {
     const { user } = useContext(AuthContext);
@@ -33,7 +34,7 @@ const SelectStudents = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/users/students`, config);
+            const { data } = await axios.get(getApiUrl('/api/users/students'), config);
             setStudents(Array.isArray(data) ? data : []);
             setLoading(false);
         } catch (error) {

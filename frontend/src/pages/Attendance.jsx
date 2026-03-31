@@ -5,6 +5,7 @@ import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import Select from 'react-select';
 import '../styles.css';
+import getApiUrl from '../utils/apiConfig';
 
 const Attendance = () => {
     const navigate = useNavigate();
@@ -33,7 +34,7 @@ const Attendance = () => {
 
     const fetchEvents = async () => {
         try {
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events`);
+            const { data } = await axios.get(getApiUrl('/api/events'));
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -50,7 +51,7 @@ const Attendance = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/users/students`, config);
+            const { data } = await axios.get(getApiUrl('/api/users/students'), config);
             setStudents(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -66,7 +67,7 @@ const Attendance = () => {
                 },
             };
             const { data } = await axios.get(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/attendance?event=${eventId}`,
+                getApiUrl(`/api/attendance?event=${eventId}`),
                 config
             );
             setAttendance(Array.isArray(data) ? data : []);
@@ -84,7 +85,7 @@ const Attendance = () => {
                 },
             };
             const { data } = await axios.get(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/attendance/event/${eventId}/stats`,
+                getApiUrl(`/api/attendance/event/${eventId}/stats`),
                 config
             );
             setStats(data);
@@ -112,7 +113,7 @@ const Attendance = () => {
                 },
             };
             await axios.post(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/attendance/bulk`,
+                getApiUrl('/api/attendance/bulk'),
                 {
                     event: selectedEvent,
                     students: selectedStudents,
@@ -151,7 +152,7 @@ const Attendance = () => {
                 responseType: 'blob'
             };
             const response = await axios.get(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/attendance/export/csv?event=${selectedEvent}`,
+                getApiUrl(`/api/attendance/export/csv?event=${selectedEvent}`),
                 config
             );
 

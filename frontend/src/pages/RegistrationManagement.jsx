@@ -3,6 +3,7 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import '../styles.css';
+import getApiUrl from '../utils/apiConfig';
 
 const RegistrationManagement = () => {
     const { user } = useContext(AuthContext);
@@ -21,7 +22,7 @@ const RegistrationManagement = () => {
 
     const fetchEvents = async () => {
         try {
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events`);
+            const { data } = await axios.get(getApiUrl('/api/events'));
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -41,7 +42,7 @@ const RegistrationManagement = () => {
                 },
             };
             const { data } = await axios.get(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${eventId}`,
+                getApiUrl(`/api/events/${eventId}`),
                 config
             );
             setSelectedEvent(data);
@@ -63,7 +64,7 @@ const RegistrationManagement = () => {
                 },
             };
             await axios.put(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${userId}/approve`,
+                getApiUrl(`/api/events/${selectedEvent._id}/registrations/${userId}/approve`),
                 {},
                 config
             );
@@ -86,7 +87,7 @@ const RegistrationManagement = () => {
                 },
             };
             await axios.put(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${userId}/reject`,
+                getApiUrl(`/api/events/${selectedEvent._id}/registrations/${userId}/reject`),
                 {},
                 config
             );
@@ -112,13 +113,16 @@ const RegistrationManagement = () => {
                 },
             };
             
-            await Promise.all(pendingUsers.map(reg => 
-                axios.put(
-                    `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${reg.user._id}/approve`,
+            const promises = [];
+            pendingUsers.forEach(reg => 
+                promises.push(axios.put(
+                    getApiUrl(`/api/events/${selectedEvent._id}/registrations/${reg.user._id}/approve`),
                     {},
                     config
-                )
-            ));
+                ))
+            );
+            
+            await Promise.all(promises);
             
             toast.dismiss(loadingToast);
             toast.success(`✓ Successfully approved ${pendingUsers.length} registrations!`);
@@ -143,13 +147,16 @@ const RegistrationManagement = () => {
                 },
             };
             
-            await Promise.all(pendingUsers.map(reg => 
-                axios.put(
-                    `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${reg.user._id}/reject`,
+            const promises = [];
+            pendingUsers.forEach(reg => 
+                promises.push(axios.put(
+                    getApiUrl(`/api/events/${selectedEvent._id}/registrations/${reg.user._id}/reject`),
                     {},
                     config
-                )
-            ));
+                ))
+            );
+            
+            await Promise.all(promises);
             
             toast.dismiss(loadingToast);
             toast.success(`✓ Successfully rejected ${pendingUsers.length} registrations!`);

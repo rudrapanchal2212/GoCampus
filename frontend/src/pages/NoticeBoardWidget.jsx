@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import getApiUrl from '../utils/apiConfig';
 
 const TYPE_CONFIG = {
     info:    { color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe', icon: 'ℹ️', label: 'Info' },
@@ -40,7 +41,7 @@ const NoticeBoardWidget = () => {
 
     const fetchAnnouncements = async () => {
         try {
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/announcements`);
+            const { data } = await axios.get(getApiUrl('/api/announcements'));
             setAnnouncements(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Failed to fetch announcements', err);
@@ -52,7 +53,7 @@ const NoticeBoardWidget = () => {
     const fetchEvents = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events?limit=50`, config);
+            const { data } = await axios.get(getApiUrl('/api/events?limit=50'), config);
             setEvents(data.events || []);
         } catch (err) { /* silently ignore */ }
     };

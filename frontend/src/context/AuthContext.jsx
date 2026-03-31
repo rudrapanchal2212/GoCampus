@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import getApiUrl from '../utils/apiConfig';
 
 const AuthContext = createContext();
 
@@ -18,11 +19,10 @@ export const AuthProvider = ({ children }) => {
 
     // Login
     const login = async (userData) => {
-        let apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "");
-        if (!apiUrl.startsWith('http')) apiUrl = `https://${apiUrl}`;
-        console.warn(`[API] Attempting login to: ${apiUrl}/api/users/login`);
+        const apiUrl = getApiUrl('/api/users/login');
+        console.warn(`[API] Attempting login to: ${apiUrl}`);
         try {
-            const res = await axios.post(`${apiUrl}/api/users/login`, userData);
+            const res = await axios.post(apiUrl, userData);
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);
@@ -36,10 +36,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Register
     const register = async (userData) => {
         try {
-            const res = await axios.post(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "")}/api/users`, userData);
+            const res = await axios.post(getApiUrl('/api/users'), userData);
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     // Google Login
     const googleLogin = async (credential) => {
         try {
-            const res = await axios.post(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "")}/api/users/google-login`, { credential });
+            const res = await axios.post(getApiUrl('/api/users/google-login'), { credential });
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);

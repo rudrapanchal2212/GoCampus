@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import '../styles.css';
+import getApiUrl from '../utils/apiConfig';
 
 const Events = () => {
     const [events, setEvents] = useState([]);
@@ -32,7 +33,7 @@ const Events = () => {
     const fetchStudentsList = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/users/students`, config);
+            const { data } = await axios.get(getApiUrl('/api/users/students'), config);
             if (Array.isArray(data)) setStudentList(data.filter(s => s._id !== user._id));
         } catch (error) {
             console.error("Could not fetch students", error);
@@ -45,7 +46,7 @@ const Events = () => {
 
     const fetchEvents = async () => {
         try {
-            let url = `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events?limit=100`;
+            let url = getApiUrl('/api/events?limit=100');
             if (categoryFilter) url += `&category=${categoryFilter}`;
             if (statusFilter) url += `&status=${statusFilter}`;
 

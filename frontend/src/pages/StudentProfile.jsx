@@ -4,6 +4,7 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import '../styles.css';
+import getApiUrl from '../utils/apiConfig';
 
 const StudentProfile = () => {
     const { user, updateUser } = useContext(AuthContext);
@@ -70,7 +71,7 @@ const StudentProfile = () => {
             };
 
             const { data } = await axios.put(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/users/profile`,
+                getApiUrl('/api/users/profile'),
                 formData,
                 config
             );

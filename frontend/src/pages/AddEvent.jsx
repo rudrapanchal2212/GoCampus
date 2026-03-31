@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import getApiUrl from '../utils/apiConfig';
 
 const AddEvent = () => {
     const { user } = useContext(AuthContext);
@@ -91,10 +92,10 @@ const AddEvent = () => {
 
         try {
             if (isEditMode) {
-                await axios.put(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${state.event._id}`, eventData, config);
+                await axios.put(getApiUrl(`/api/events/${state.event._id}`), eventData, config);
                 toast.success('Event Updated Successfully!');
             } else {
-                await axios.post(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events`, eventData, config);
+                await axios.post(getApiUrl('/api/events'), eventData, config);
                 toast.success('Event Created Successfully!');
             }
             navigate('/events');
