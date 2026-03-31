@@ -291,15 +291,18 @@ const registerForEvent = asyncHandler(async (req, res) => {
         usersToRegister = [...usersToRegister, ...memberIds];
     }
 
-    // Check if already registered
+    // Check if already registered or in waiting list
     const alreadyRegistered = event.registrations.find(r => {
-        const regUserIds = [r.user.toString(), ...(r.teamMembers || []).map(m => m.toString())];
-        return usersToRegister.some(userId => regUserIds.includes(userId));
+        if (!r.user) return false;
+        const regUserIds = [r.user.toString(), ...(r.teamMembers || []).filter(m => m).map(m => m.toString())];
+        return usersToRegister.some(userId => regUserIds.includes(userId.toString()));
     });
 
-    if (alreadyRegistered) {
+    const inWaitingList = event.waitingList.some(id => usersToRegister.includes(id.toString()));
+
+    if (alreadyRegistered || inWaitingList) {
         res.status(400);
-        throw new Error('You or one of your team members are already registered for this event');
+        throw new Error('You or one of your team members are already registered for this event or on the waiting list');
     }
 
     // Check registration limit
@@ -435,7 +438,7 @@ const addEventReview = asyncHandler(async (req, res) => {
 
     // Check if user already reviewed
     const alreadyReviewed = event.reviews.find(
-        r => r.user.toString() === req.user._id.toString()
+        r => r.user && r.user.toString() === req.user._id.toString()
     );
 
     if (alreadyReviewed) {

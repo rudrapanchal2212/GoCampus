@@ -97,7 +97,7 @@ const Events = () => {
                 },
             };
             const { data } = await axios.post(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${event._id}/register`,
+                getApiUrl(`/api/events/${event._id}/register`),
                 {},
                 config
             );
@@ -114,7 +114,7 @@ const Events = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const { data } = await axios.post(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedTeamEvent._id}/register`,
+                getApiUrl(`/api/events/${selectedTeamEvent._id}/register`),
                 teamForm,
                 config
             );
@@ -135,7 +135,7 @@ const Events = () => {
                         Authorization: `Bearer ${user.token}`,
                     },
                 };
-                await axios.delete(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${id}`, config);
+                await axios.delete(getApiUrl(`/api/events/${id}`), config);
                 toast.success('Event deleted successfully');
                 fetchEvents();
             } catch (error) {
@@ -148,7 +148,7 @@ const Events = () => {
     const handleApproveEvent = async (id) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${id}/approve`, {}, config);
+            await axios.put(getApiUrl(`/api/events/${id}/approve`), {}, config);
             toast.success('Event approved');
             fetchEvents();
         } catch (error) {
@@ -161,7 +161,7 @@ const Events = () => {
         if (window.confirm('Reject and delete this event proposal?')) {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                await axios.put(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${id}/reject`, {}, config);
+                await axios.put(getApiUrl(`/api/events/${id}/reject`), {}, config);
                 toast.success('Event proposal rejected');
                 fetchEvents();
             } catch (error) {
@@ -176,7 +176,7 @@ const Events = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const { data } = await axios.post(
-                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEventForReview}/reviews`,
+                getApiUrl(`/api/events/${selectedEventForReview}/reviews`),
                 reviewForm,
                 config
             );
