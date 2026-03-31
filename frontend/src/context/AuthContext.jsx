@@ -18,8 +18,10 @@ export const AuthProvider = ({ children }) => {
 
     // Login
     const login = async (userData) => {
+        const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "");
+        console.warn(`[API] Attempting login to: ${apiUrl}/api/users/login`);
         try {
-            const res = await axios.post(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "")}/api/users/login`, userData);
+            const res = await axios.post(`${apiUrl}/api/users/login`, userData);
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);

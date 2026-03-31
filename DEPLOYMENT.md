@@ -47,5 +47,15 @@ This guide provides instructions on how to deploy the GoCampus project to **Rail
 - **CORS**: Make sure the `FRONTEND_URL` in Railway precisely matches your Vercel URL (including `https://` but no trailing slash).
 - **Google Auth**: If using Google Login, update your [Google Cloud Console](https://console.cloud.google.com/) with the new production redirect URIs and origins.
 - **Database**: Ensure your MongoDB Atlas Cluster has a network permission for `0.0.0.0/0` (allow access from anywhere) or specific IP addresses if you have a static IP.
+---
+
+## 4. Troubleshooting: "Login Failed" Error 🛠️
+
+If you see a red "Login Failed" toast:
+1.  **Open Browser Console (F12)**: Check the `Network` tab or `Console`.
+2.  If you see `http://localhost:5000/api/users/login`, **Vercel is not using your environment variable!**.
+3.  **Fix**: Go to Vercel -> Settings -> Environment Variables. Add `VITE_API_URL` -> `https://gocampus-production.up.railway.app`.
+4.  **Re-deploy**: You **must** trigger a new deployment for the changes to take effect! (Go to "Deployments" tab -> click three dots -> "Redeploy").
+5.  Check **Railway Logs**: Ensure the `JWT_SECRET` matches your local secret or `secret123`.
 
 Happy Deploying! 🎉
