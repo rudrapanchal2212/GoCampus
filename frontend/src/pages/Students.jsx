@@ -20,7 +20,7 @@ const Students = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/users/students`, config);
+            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/users/students`, config);
             setStudents(data);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -37,7 +37,7 @@ const Students = () => {
             const config = {
                 headers: { Authorization: `Bearer ${user.token}` },
             };
-            await axios.put(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/users/${userId}/role`, { role: newRole }, config);
+            await axios.put(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/users/${userId}/role`, { role: newRole }, config);
             toast.success("Role updated successfully");
             fetchStudents();
         } catch (error) {

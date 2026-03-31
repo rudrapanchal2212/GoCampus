@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     // Login
     const login = async (userData) => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users/login`, userData);
+            const res = await axios.post(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "")}/api/users/login`, userData);
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     // Register
     const register = async (userData) => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users`, userData);
+            const res = await axios.post(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "")}/api/users`, userData);
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
     // Google Login
     const googleLogin = async (credential) => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users/google-login`, { credential });
+            const res = await axios.post(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, "")}/api/users/google-login`, { credential });
             if (res.data) {
                 localStorage.setItem('user', JSON.stringify(res.data));
                 setUser(res.data);

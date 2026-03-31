@@ -21,7 +21,7 @@ const RegistrationManagement = () => {
 
     const fetchEvents = async () => {
         try {
-            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events`);
+            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events`);
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -41,7 +41,7 @@ const RegistrationManagement = () => {
                 },
             };
             const { data } = await axios.get(
-                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events/${eventId}`,
+                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${eventId}`,
                 config
             );
             setSelectedEvent(data);
@@ -63,7 +63,7 @@ const RegistrationManagement = () => {
                 },
             };
             await axios.put(
-                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events/${selectedEvent._id}/registrations/${userId}/approve`,
+                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${userId}/approve`,
                 {},
                 config
             );
@@ -86,7 +86,7 @@ const RegistrationManagement = () => {
                 },
             };
             await axios.put(
-                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events/${selectedEvent._id}/registrations/${userId}/reject`,
+                `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${userId}/reject`,
                 {},
                 config
             );
@@ -114,7 +114,7 @@ const RegistrationManagement = () => {
             
             await Promise.all(pendingUsers.map(reg => 
                 axios.put(
-                    `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events/${selectedEvent._id}/registrations/${reg.user._id}/approve`,
+                    `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${reg.user._id}/approve`,
                     {},
                     config
                 )
@@ -145,7 +145,7 @@ const RegistrationManagement = () => {
             
             await Promise.all(pendingUsers.map(reg => 
                 axios.put(
-                    `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events/${selectedEvent._id}/registrations/${reg.user._id}/reject`,
+                    `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${selectedEvent._id}/registrations/${reg.user._id}/reject`,
                     {},
                     config
                 )

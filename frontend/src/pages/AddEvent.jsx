@@ -91,10 +91,10 @@ const AddEvent = () => {
 
         try {
             if (isEditMode) {
-                await axios.put(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events/${state.event._id}`, eventData, config);
+                await axios.put(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events/${state.event._id}`, eventData, config);
                 toast.success('Event Updated Successfully!');
             } else {
-                await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events`, eventData, config);
+                await axios.post(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events`, eventData, config);
                 toast.success('Event Created Successfully!');
             }
             navigate('/events');

@@ -50,7 +50,7 @@ const Dashboard = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/analytics/dashboard`, config);
+            const { data } = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/analytics/dashboard`, config);
             setAnalytics(data);
             setLoading(false);
         } catch (error) {
@@ -61,7 +61,7 @@ const Dashboard = () => {
 
     const fetchBasicStats = async () => {
         try {
-            const eventsRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events`);
+            const eventsRes = await axios.get(`${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/events`);
             setAnalytics({
                 summary: {
                     totalEvents: eventsRes.data.events?.length || 0,
