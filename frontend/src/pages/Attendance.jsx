@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -6,6 +7,8 @@ import Select from 'react-select';
 import '../styles.css';
 
 const Attendance = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useContext(AuthContext);
     const [events, setEvents] = useState([]);
     const [students, setStudents] = useState([]);
@@ -36,7 +39,7 @@ const Attendance = () => {
         } catch (error) {
             console.error("Error fetching events:", error);
             toast.error("Failed to fetch events");
-            setEvents([]); // Set to empty array on error
+            setEvents([]);
         }
     };
 
@@ -51,7 +54,7 @@ const Attendance = () => {
             setStudents(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching students:", error);
-            setStudents([]); // Set to empty array on error
+            setStudents([]); 
         }
     };
 
@@ -69,8 +72,7 @@ const Attendance = () => {
             setAttendance(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching attendance:", error);
-            toast.error("Failed to fetch attendance");
-            setAttendance([]); // Set to empty array on error
+            setAttendance([]);
         }
     };
 
@@ -91,75 +93,17 @@ const Attendance = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!selectedEvent || selectedStudents.length === 0) {
-            toast.error("Please select an event and at least one student");
-            return;
-        }
-
-        // Add loading state
-        const loadingToast = toast.loading(`Marking attendance for ${selectedStudents.length} students...`);
-
-        try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            };
-            await axios.post(
-                `http://${window.location.hostname}:5000/api/attendance/bulk`,
-                {
-                    event: selectedEvent,
-                    students: selectedStudents,
-                    status,
-                    session
-                },
-                config
-            );
-
-            // Dismiss loading toast
-            toast.dismiss(loadingToast);
-            toast.success(`✓ Marked attendance for ${selectedStudents.length} students!`);
-
-            // Auto-refresh data with smooth transition
-            await Promise.all([
-                fetchAttendance(selectedEvent),
-                fetchEventStats(selectedEvent)
-            ]);
-
-            // Reset selection
-            setSelectedStudents([]);
-
-            // Optional: Add a subtle success animation effect
-            const statsCards = document.querySelectorAll('.stat-card');
-            statsCards.forEach(card => {
-                card.style.transition = 'transform 0.3s ease';
-                card.style.transform = 'scale(1.05)';
-                setTimeout(() => {
-                    card.style.transform = 'scale(1)';
-                }, 300);
-            });
-
-        } catch (error) {
-            toast.dismiss(loadingToast);
-            console.error("Error marking attendance:", error);
-            toast.error(error.response?.data?.message || "Failed to mark attendance");
-        }
-    };
-
-    const handleBulkMark = async () => {
-        if (selectedStudents.length === 0) {
-            toast.error("Please select students");
-            return;
-        }
+    const handleSaveAttendance = async () => {
         if (!selectedEvent) {
             toast.error("Please select an event");
             return;
         }
+        if (selectedStudents.length === 0) {
+            toast.error("Please select at least one student");
+            return;
+        }
 
-        // Add loading state
-        const loadingToast = toast.loading(`Marking attendance for ${selectedStudents.length} students...`);
+        const loadingToast = toast.loading(`Saving attendance for ${selectedStudents.length} students...`);
 
         try {
             const config = {
@@ -172,39 +116,25 @@ const Attendance = () => {
                 {
                     event: selectedEvent,
                     students: selectedStudents,
-                    status,
+                    status: 'Present', // Or use chosen status
                     session
                 },
                 config
             );
 
-            // Dismiss loading toast
             toast.dismiss(loadingToast);
             toast.success(`✓ Marked attendance for ${selectedStudents.length} students!`);
 
-            // Auto-refresh data with smooth transition
             await Promise.all([
                 fetchAttendance(selectedEvent),
                 fetchEventStats(selectedEvent)
             ]);
 
-            // Reset selections
             setSelectedStudents([]);
-
-            // Add success animation
-            const statsCards = document.querySelectorAll('.stat-card');
-            statsCards.forEach(card => {
-                card.style.transition = 'transform 0.3s ease';
-                card.style.transform = 'scale(1.05)';
-                setTimeout(() => {
-                    card.style.transform = 'scale(1)';
-                }, 300);
-            });
-
         } catch (error) {
             toast.dismiss(loadingToast);
-            console.error("Error bulk marking:", error);
-            toast.error("Failed to mark bulk attendance");
+            console.error("Error saving attendance:", error);
+            toast.error(error.response?.data?.message || "Failed to mark attendance");
         }
     };
 
@@ -225,7 +155,6 @@ const Attendance = () => {
                 config
             );
 
-            // Create download link
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -249,23 +178,9 @@ const Attendance = () => {
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'Present': return '#10b981';
-            case 'Late': return '#f59e0b';
-            case 'Absent': return '#ef4444';
-            default: return '#6b7280';
-        }
-    };
-
     const eventOptions = Array.isArray(events) ? events.map(event => ({
         value: event._id,
         label: event.title
-    })) : [];
-
-    const studentOptions = Array.isArray(students) ? students.map(student => ({
-        value: student._id,
-        label: `${student.enrollmentNo ? `${student.enrollmentNo} - ` : ''}${student.name} (${student.email})`
     })) : [];
 
     const sessionOptions = [
@@ -276,29 +191,25 @@ const Attendance = () => {
         { value: 'Day 2', label: 'Day 2' }
     ];
 
-    const statusOptions = [
-        { value: 'Present', label: 'Present' },
-        { value: 'Late', label: 'Late' },
-        { value: 'Absent', label: 'Absent' }
-    ];
-
     const selectStyles = {
         control: (base, state) => ({
             ...base,
             backgroundColor: 'var(--bg-color)',
             borderColor: state.isFocused ? 'var(--primary-color)' : 'var(--border-color)',
-            color: 'var(--text-primary)',
-            minHeight: '44px',
-            boxShadow: state.isFocused ? '0 0 0 3px rgba(99, 102, 241, 0.15)' : 'none',
+            boxShadow: 'none',
             '&:hover': {
-                borderColor: state.isFocused ? 'var(--primary-color)' : 'var(--border-color)'
+                borderColor: 'var(--primary-color)'
             }
         }),
         menu: (base) => ({
             ...base,
-            backgroundColor: 'var(--card-bg)',
-            border: '1px solid var(--border-color)',
-            zIndex: 100
+            zIndex: 9999,
+            backgroundColor: 'var(--card-bg)' || '#fff',
+            border: '1px solid var(--border-color)'
+        }),
+        menuPortal: (base) => ({
+            ...base,
+            zIndex: 9999
         }),
         option: (base, state) => ({
             ...base,
@@ -308,240 +219,205 @@ const Attendance = () => {
                     ? 'rgba(99, 102, 241, 0.1)' 
                     : 'transparent',
             color: state.isSelected ? '#fff' : 'var(--text-primary)',
-            cursor: 'pointer',
-            '&:active': {
-                backgroundColor: 'var(--primary-hover)'
-            }
-        }),
-        singleValue: (base) => ({
-            ...base,
-            color: 'var(--text-primary)',
-        }),
-        input: (base) => ({
-            ...base,
-            color: 'var(--text-primary)',
-        }),
-        placeholder: (base) => ({
-            ...base,
-            color: 'var(--text-secondary)',
+            cursor: 'pointer'
         })
     };
 
+    // Grouping logic for rendering
+    const groupedStudents = students.reduce((acc, student) => {
+        const dept = student.department || 'Other';
+        if (!acc[dept]) acc[dept] = [];
+        acc[dept].push(student);
+        return acc;
+    }, {});
+
+    const getInitials = (name) => {
+        if (!name) return '?';
+        return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
+    };
+
     return (
-        <div className="container">
-            <h2>Attendance Management</h2>
+        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0 }}>Attendance Register</h2>
+                <button 
+                    onClick={handleExportCSV} 
+                    style={{
+                        padding: '8px 16px',
+                        backgroundColor: 'white',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontWeight: '500'
+                    }}
+                >
+                    📥 Export CSV
+                </button>
+            </div>
 
-            {/* Statistics */}
-            {stats && (
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                    <div className="card p-4 stat-card" style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
-                            {stats.overall.present}
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Present</div>
-                    </div>
-                    <div className="card p-4 stat-card" style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>
-                            {stats.overall.late}
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Late</div>
-                    </div>
-                    <div className="card p-4 stat-card" style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ef4444' }}>
-                            {stats.overall.absent}
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Absent</div>
-                    </div>
-                    <div className="card p-4 stat-card" style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4f46e5' }}>
-                            {stats.overall.percentage}%
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Attendance Rate</div>
-                    </div>
-                </div>
-            )}
-
-            <div className="card p-4">
-                <h3>Mark Attendance</h3>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label>Select Event</label>
+            <div className="card" style={{ padding: '20px', marginBottom: '30px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Select Event</label>
                         <Select
                             options={eventOptions}
                             value={eventOptions.find(opt => opt.value === selectedEvent) || null}
                             onChange={(option) => setSelectedEvent(option ? option.value : '')}
-                            placeholder="-- Select Event --"
+                            placeholder="Select Event"
                             isSearchable
                             styles={selectStyles}
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
                         />
                     </div>
-
-                    <div className="form-group">
-                        <label>Session</label>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Select Session</label>
                         <Select
                             options={sessionOptions}
                             value={sessionOptions.find(opt => opt.value === session) || sessionOptions[0]}
                             onChange={(option) => setSession(option ? option.value : 'General')}
                             isSearchable={false}
                             styles={selectStyles}
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
                         />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Select Students</label>
-                        <Select
-                            isMulti
-                            options={studentOptions}
-                            value={studentOptions.filter(opt => selectedStudents.includes(opt.value))}
-                            onChange={(options) => setSelectedStudents(options ? options.map(opt => opt.value) : [])}
-                            placeholder="-- Select Multiple Students --"
-                            isSearchable
-                            styles={{
-                                ...selectStyles,
-                                multiValue: (provided) => ({
-                                    ...provided,
-                                    backgroundColor: 'var(--primary-color)',
-                                }),
-                                multiValueLabel: (provided) => ({
-                                    ...provided,
-                                    color: 'white',
-                                }),
-                                multiValueRemove: (provided) => ({
-                                    ...provided,
-                                    color: 'white',
-                                    ':hover': {
-                                        backgroundColor: '#bc3333',
-                                        color: 'white',
-                                    },
-                                })
-                            }}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Status</label>
-                        <Select
-                            options={statusOptions}
-                            value={statusOptions.find(opt => opt.value === status) || statusOptions[0]}
-                            onChange={(option) => setStatus(option ? option.value : 'Present')}
-                            isSearchable={false}
-                            styles={selectStyles}
-                        />
-                    </div>
-
-                    <button type="submit" className="btn btn-primary">Mark Attendance</button>
-                </form>
-            </div>
-
-            {/* Bulk Marking */}
-            {selectedEvent && (
-                <div className="card p-4 mt-4">
-                    <h3>Bulk Mark Attendance</h3>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                        Select students below and click "Mark Selected" to mark attendance for multiple students at once.
-                    </p>
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                        <button
-                            onClick={handleBulkMark}
-                            className="btn btn-primary"
-                            disabled={selectedStudents.length === 0}
-                        >
-                            Mark Selected ({selectedStudents.length})
-                        </button>
-                        <button onClick={handleExportCSV} className="btn btn-secondary">
-                            📥 Export CSV
-                        </button>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Attendance List */}
-            <div className="card p-4 mt-4">
-                <h3>Attendance List {selectedEvent ? `for Selected Event` : '(Select Event to View)'}</h3>
-                {selectedEvent && (
-                    <div style={{ overflowX: 'auto' }}>
-                        {attendance.length === 0 ? (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">📋</div>
-                                <p>No attendance records found.</p>
-                            </div>
-                        ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                                        <th style={{ padding: '10px' }}>
-                                            <input
-                                                type="checkbox"
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedStudents(Array.isArray(students) ? students.map(s => s._id) : []);
-                                                    } else {
-                                                        setSelectedStudents([]);
-                                                    }
-                                                }}
+            <div className="card" style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Class Register</h3>
+                    <button 
+                        onClick={handleSaveAttendance}
+                        style={{
+                            padding: '8px 20px',
+                            backgroundColor: '#4f46e5',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: '500'
+                        }}
+                    >
+                        💾 Save Attendance
+                    </button>
+                </div>
+
+                <div style={{ padding: '20px' }}>
+                    {Object.keys(groupedStudents).length === 0 ? (
+                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px 0' }}>No students available.</p>
+                    ) : (
+                        Object.keys(groupedStudents).sort().map(dept => {
+                            const deptStudents = groupedStudents[dept];
+                            const allSelected = deptStudents.length > 0 && deptStudents.every(s => selectedStudents.includes(s._id));
+                            
+                            const handleSelectAllDept = () => {
+                                if (allSelected) {
+                                    const idsToRemove = deptStudents.map(s => s._id);
+                                    setSelectedStudents(selectedStudents.filter(id => !idsToRemove.includes(id)));
+                                } else {
+                                    const idsToAdd = deptStudents.map(s => s._id).filter(id => !selectedStudents.includes(id));
+                                    setSelectedStudents([...selectedStudents, ...idsToAdd]);
+                                }
+                            };
+
+                            return (
+                                <div key={dept} style={{ marginBottom: '30px' }}>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        alignItems: 'center',
+                                        backgroundColor: '#f8fafc',
+                                        padding: '12px 16px',
+                                        borderRadius: '8px',
+                                        marginBottom: '16px',
+                                        borderLeft: '4px solid #4f46e5'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>{dept}</h4>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{deptStudents.length} students</span>
+                                        </div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={allSelected}
+                                                onChange={handleSelectAllDept}
+                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                                             />
-                                        </th>
-                                        <th style={{ padding: '10px' }}>Student</th>
-                                        <th style={{ padding: '10px' }}>Session</th>
-                                        <th style={{ padding: '10px' }}>Status</th>
-                                        <th style={{ padding: '10px' }}>Marked At</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {Array.isArray(attendance) && attendance.map((record) => (
-                                        <tr key={record._id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                            <td style={{ padding: '10px' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedStudents.includes(record.student?._id)}
-                                                    onChange={() => toggleStudentSelection(record.student?._id)}
+                                            Select All
+                                        </label>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                                        {deptStudents.map(student => (
+                                            <div 
+                                                key={student._id} 
+                                                onClick={() => toggleStudentSelection(student._id)}
+                                                style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '16px',
+                                                    padding: '12px 16px',
+                                                    border: '1px solid var(--border-color)',
+                                                    borderRadius: '8px',
+                                                    width: 'calc(50% - 8px)',
+                                                    minWidth: '280px',
+                                                    cursor: 'pointer',
+                                                    transition: 'border-color 0.2s',
+                                                    borderColor: selectedStudents.includes(student._id) ? '#4f46e5' : 'var(--border-color)',
+                                                    backgroundColor: selectedStudents.includes(student._id) ? '#eef2ff' : 'white'
+                                                }}
+                                            >
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedStudents.includes(student._id)}
+                                                    onChange={() => {}} // handled by parent div onClick
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                                 />
-                                            </td>
-                                            <td style={{ padding: '10px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    {record.student?.profilePhoto && (
-                                                        <img
-                                                            src={record.student.profilePhoto}
-                                                            alt={record.student.name}
-                                                            style={{
-                                                                width: '30px',
-                                                                height: '30px',
-                                                                borderRadius: '50%',
-                                                                objectFit: 'cover'
-                                                            }}
-                                                        />
+                                                <div style={{ 
+                                                    width: '40px', 
+                                                    height: '40px', 
+                                                    borderRadius: '50%',
+                                                    backgroundColor: '#e2e8f0',
+                                                    color: '#64748b',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '0.9rem',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    {student.profilePhoto ? (
+                                                        <img src={student.profilePhoto} alt={student.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        getInitials(student.name)
                                                     )}
-                                                    <div>
-                                                        <strong>{record.student?.name || 'Unknown'}</strong>
-                                                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                                            {record.student?.enrollmentNo ? `${record.student.enrollmentNo} | ` : ''}
-                                                            {record.student?.email}
-                                                        </div>
+                                                </div>
+                                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                                    <div style={{ fontWeight: '500', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {student.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {student.email}
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td style={{ padding: '10px' }}>{record.session}</td>
-                                            <td style={{ padding: '10px' }}>
-                                                <span style={{
-                                                    color: getStatusColor(record.status),
-                                                    fontWeight: 'bold'
-                                                }}>
-                                                    {record.status}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '10px' }}>
-                                                {new Date(record.markedAt).toLocaleString()}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
         </div>
     );
 };
-
 export default Attendance;

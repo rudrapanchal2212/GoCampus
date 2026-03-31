@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import StudentProfile from './pages/StudentProfile';
 import LandingPage from './pages/LandingPage';
+import SelectStudents from './pages/SelectStudents';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import AuthContext from './context/AuthContext';
@@ -86,6 +87,7 @@ const AppContent = () => {
           <Route path="/edit-event/:id" element={<AdminRoute><AddEvent /></AdminRoute>} />
           <Route path="/students" element={<AdminRoute><Students /></AdminRoute>} />
           <Route path="/attendance" element={<AdminRoute><Attendance /></AdminRoute>} />
+          <Route path="/select-students" element={<AdminRoute><SelectStudents /></AdminRoute>} />
           <Route path="/registrations" element={<AdminRoute><RegistrationManagement /></AdminRoute>} />
         </Routes>
       </div>
