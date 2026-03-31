@@ -23,6 +23,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
     process.env.FRONTEND_URL,
+    'https://go-campus-three.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
