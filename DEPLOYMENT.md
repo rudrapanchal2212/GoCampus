@@ -37,7 +37,7 @@ This guide provides instructions on how to deploy the GoCampus project to **Rail
    - **Root Directory**: Select `frontend`.
    - **Build Settings**: Vercel should automatically detect **Vite** settings.
 4. **Environment Variables**:
-   - Add a variable `VITE_API_URL` and set its value to your **Railway Backend URL** (e.g., `https://gocampus-production.up.railway.app`).
+   - Add a variable `VITE_API_URL` and set its value to your **Railway Backend URL**: `https://gocampus-production.up.railway.app`
 5. Click **Deploy**.
 
 ---
