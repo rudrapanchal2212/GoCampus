@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
 const fs = require('fs');
+const dotenv = require('dotenv');
 const User = require('./models/User');
 const Venue = require('./models/Venue');
 const Event = require('./models/Event');
 const Attendance = require('./models/Attendance');
 const Announcement = require('./models/Announcement');
 
-mongoose.connect('mongodb://localhost:27017/campus_event_db');
+dotenv.config();
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_event_db');
+
 
 const importData = async () => {
     try {

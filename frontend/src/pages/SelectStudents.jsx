@@ -33,7 +33,7 @@ const SelectStudents = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/users/students`, config);
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/users/students`, config);
             setStudents(Array.isArray(data) ? data : []);
             setLoading(false);
         } catch (error) {

@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 const bodyParser = require('body-parser');
 
 const connectDB = require('./config/db');
@@ -20,8 +21,27 @@ startReminderJob();
 const app = express();
 
 // Middleware
-app.use(cors()); // Enable CORS
-app.use(bodyParser.json({ limit: '50mb' })); // Parse JSON bodies with larger limit for images
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true
+}));
+
+app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
@@ -33,12 +53,18 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 
+// Root route for health check
+app.get('/', (req, res) => {
+    res.json({ message: 'GoCampus API is running...' });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({
+    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    console.error(`[Error] ${req.method} ${req.url} : ${err.message}`);
+    res.status(statusCode).json({
         message: err.message || 'Server Error',
-        error: process.env.NODE_ENV === 'development' ? err : {}
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });
 });
 

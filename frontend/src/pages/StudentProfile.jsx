@@ -70,7 +70,7 @@ const StudentProfile = () => {
             };
 
             const { data } = await axios.put(
-                `http://${window.location.hostname}:5000/api/users/profile`,
+                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/users/profile`,
                 formData,
                 config
             );

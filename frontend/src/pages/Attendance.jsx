@@ -33,7 +33,7 @@ const Attendance = () => {
 
     const fetchEvents = async () => {
         try {
-            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/events`);
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events`);
             const eventsList = data.events || data || [];
             setEvents(Array.isArray(eventsList) ? eventsList : []);
         } catch (error) {
@@ -50,7 +50,7 @@ const Attendance = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/users/students`, config);
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/users/students`, config);
             setStudents(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -66,7 +66,7 @@ const Attendance = () => {
                 },
             };
             const { data } = await axios.get(
-                `http://${window.location.hostname}:5000/api/attendance?event=${eventId}`,
+                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/attendance?event=${eventId}`,
                 config
             );
             setAttendance(Array.isArray(data) ? data : []);
@@ -84,7 +84,7 @@ const Attendance = () => {
                 },
             };
             const { data } = await axios.get(
-                `http://${window.location.hostname}:5000/api/attendance/event/${eventId}/stats`,
+                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/attendance/event/${eventId}/stats`,
                 config
             );
             setStats(data);
@@ -112,7 +112,7 @@ const Attendance = () => {
                 },
             };
             await axios.post(
-                `http://${window.location.hostname}:5000/api/attendance/bulk`,
+                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/attendance/bulk`,
                 {
                     event: selectedEvent,
                     students: selectedStudents,
@@ -151,7 +151,7 @@ const Attendance = () => {
                 responseType: 'blob'
             };
             const response = await axios.get(
-                `http://${window.location.hostname}:5000/api/attendance/export/csv?event=${selectedEvent}`,
+                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/attendance/export/csv?event=${selectedEvent}`,
                 config
             );
 

@@ -40,7 +40,7 @@ const NoticeBoardWidget = () => {
 
     const fetchAnnouncements = async () => {
         try {
-            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/announcements`);
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/announcements`);
             setAnnouncements(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Failed to fetch announcements', err);
@@ -52,7 +52,7 @@ const NoticeBoardWidget = () => {
     const fetchEvents = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get(`http://${window.location.hostname}:5000/api/events?limit=50`, config);
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/events?limit=50`, config);
             setEvents(data.events || []);
         } catch (err) { /* silently ignore */ }
     };
@@ -69,10 +69,10 @@ const NoticeBoardWidget = () => {
         };
         try {
             if (editingId) {
-                await axios.put(`http://${window.location.hostname}:5000/api/announcements/${editingId}`, payload, authHeader());
+                await axios.put(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/announcements/${editingId}`, payload, authHeader());
                 toast.success('Announcement updated!');
             } else {
-                await axios.post(`http://${window.location.hostname}:5000/api/announcements`, payload, authHeader());
+                await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/announcements`, payload, authHeader());
                 toast.success('Announcement posted!');
             }
             setShowForm(false);
@@ -99,7 +99,7 @@ const NoticeBoardWidget = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Remove this announcement?')) return;
         try {
-            await axios.delete(`http://${window.location.hostname}:5000/api/announcements/${id}`, authHeader());
+            await axios.delete(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/announcements/${id}`, authHeader());
             toast.success('Announcement removed');
             fetchAnnouncements();
         } catch (err) {
@@ -110,7 +110,7 @@ const NoticeBoardWidget = () => {
     const handleTogglePin = async (ann) => {
         try {
             await axios.put(
-                `http://${window.location.hostname}:5000/api/announcements/${ann._id}`,
+                `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/announcements/${ann._id}`,
                 { isPinned: !ann.isPinned },
                 authHeader()
             );

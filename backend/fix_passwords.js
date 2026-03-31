@@ -1,8 +1,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const dotenv = require('dotenv');
 const User = require('./models/User');
 
-mongoose.connect('mongodb://localhost:27017/campus_event_db');
+dotenv.config();
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_event_db');
+
 
 const fixPasswordsAndAdmin = async () => {
     try {

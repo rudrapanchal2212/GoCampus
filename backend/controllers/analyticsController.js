@@ -7,12 +7,15 @@ const Attendance = require('../models/Attendance');
 // @route   GET /api/analytics/dashboard
 // @access  Private/Admin
 const getDashboardAnalytics = asyncHandler(async (req, res) => {
+    console.log('[Analytics] Fetching dashboard summary...');
     // Total counts
     const totalEvents = await Event.countDocuments({ isActive: true });
     const totalStudents = await User.countDocuments({ role: 'student' });
     const totalAttendance = await Attendance.countDocuments();
+    console.log(`[Analytics] Counts: events=${totalEvents}, students=${totalStudents}, attendances=${totalAttendance}`);
 
     // Events per month (last 12 months)
+    console.log('[Analytics] Running events per month aggregation...');
     const eventsPerMonth = await Event.aggregate([
         {
             $match: {
@@ -37,6 +40,7 @@ const getDashboardAnalytics = asyncHandler(async (req, res) => {
     ]);
 
     // Department-wise participation
+    console.log('[Analytics] Running department participation aggregation...');
     const departmentParticipation = await Attendance.aggregate([
         {
             $lookup: {
@@ -61,6 +65,7 @@ const getDashboardAnalytics = asyncHandler(async (req, res) => {
     ]);
 
     // Most popular events (by registrations)
+    console.log('[Analytics] Running popular events aggregation...');
     const popularEvents = await Event.aggregate([
         {
             $match: { isActive: true }
@@ -70,7 +75,7 @@ const getDashboardAnalytics = asyncHandler(async (req, res) => {
                 title: 1,
                 date: 1,
                 category: 1,
-                registrationCount: { $size: '$registrations' }
+                registrationCount: { $size: { $ifNull: ['$registrations', []] } }
             }
         },
         {
@@ -80,8 +85,10 @@ const getDashboardAnalytics = asyncHandler(async (req, res) => {
             $limit: 5
         }
     ]);
+    console.log(`[Analytics] Popular events: ${popularEvents.length}`);
 
     // Recent activities (last 10)
+    console.log('[Analytics] Fetching recent activities...');
     const recentActivities = [];
 
     // Recent events
@@ -144,7 +151,7 @@ const getDashboardAnalytics = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                registrationCount: { $size: '$registrations' }
+                registrationCount: { $size: { $ifNull: ['$registrations', []] } }
             }
         },
         {
