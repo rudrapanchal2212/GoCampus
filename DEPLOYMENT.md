@@ -1,27 +1,22 @@
 # GoCampus Deployment Guide 🚀
 
-This guide provides instructions on how to deploy the GoCampus project to **Railway** (Backend) and **Vercel** (Frontend).
+This guide provides instructions on how to deploy the GoCampus project to **Render** (Backend) and **Vercel/Netlify** (Frontend).
 
-## 1. Backend: Railway Deployment
+## 1. Backend: Render Deployment
 
 ### **Prerequisites**
-- A [Railway](https://railway.app/) account.
-- Your project pushed to a GitHub repository.
+- Backend deployed to [Render](https://render.com/): `https://gocampus-yxqb.onrender.com`
 
-### **Steps**
-1. Log in to Railway and click **"New Project"**.
-2. Select **"Deploy from GitHub repo"** and choose your repository.
-3. Railway will detect the repository. **Crucial Step**: Because this is a monorepo, you must go to **Settings** -> **General** -> **Root Directory** and set it to `backend`.
-   - Alternatively, the `railway.json` and `start.sh` files I've added to the root will handle this automatically.
-4. Go to the **Variables** tab in Railway and add the following environment variables:
-   - `MONGO_URI`: Your MongoDB Atlas connection string.
-   - `JWT_SECRET`: A secure random string.
-   - `EMAIL_SERVICE`: e.g., `gmail`.
-   - `EMAIL_USER`: Your email address.
-   - `EMAIL_PASS`: Your Gmail App Password.
-   - `FRONTEND_URL`: Your Vercel frontend URL (e.g., `https://gocampus.vercel.app`).
-   - `NODE_ENV`: `production`.
-5. Railway will automatically deploy. Ensure it provides a public URL (e.g., `https://gocampus-production.up.railway.app`).
+### **Environment Variables** (set in Render dashboard):
+- `MONGO_URI`: Your MongoDB Atlas connection string.
+- `JWT_SECRET`: A secure random string.
+- `EMAIL_SERVICE`: e.g., `gmail`.
+- `EMAIL_USER`: Your email address.
+- `EMAIL_PASS`: Your Gmail App Password.
+- `FRONTEND_URL`: Your frontend deploy URL.
+- `NODE_ENV`: `production`.
+
+**Backend URL**: `https://gocampus-yxqb.onrender.com`
 
 ---
 
@@ -37,7 +32,7 @@ This guide provides instructions on how to deploy the GoCampus project to **Rail
    - **Root Directory**: Select `frontend`.
    - **Build Settings**: Vercel should automatically detect **Vite** settings.
 4. **Environment Variables**:
-   - Add a variable `VITE_API_URL` and set its value to your **Railway Backend URL**: `https://gocampus-production.up.railway.app`
+  - Add a variable `VITE_API_URL` and set its value to **Render Backend URL**: `https://gocampus-yxqb.onrender.com`
 5. Click **Deploy**.
 
 ---
